@@ -1,17 +1,11 @@
-# Dino Island · 恐龙漫游
-原创绘制的彩色恐龙跑酷网页，灵感来自 Chrome 离线小游戏。纯 HTML/CSS/JavaScript，无第三方依赖。
+# Dino Island
 
-## 玩耍
-在 iPad Safari 打开部署地址。点击屏幕或跳跃按钮跳跃，按住可以跳得更高。按住下蹲按钮躲避飞鸟。支持空格/方向键；P 暂停。音效默认关闭，点击音符启用。
-场景每 300 米轮换：晨光草原、落日沙丘、星夜森林。最高分存储在当前浏览器。切换到后台自动暂停。
+简洁像素恐龙跑酷，灵感来自 Chrome 离线小游戏。仅点缀少量颜色，保留像素恐龙、细线地面、云朵、仙人掌和飞鸟。
 
-## 本地开发
-`python3 -m http.server 8080 --directory dist`，打开 http://localhost:8080。
-主文件为 dist/index.html。无需安装依赖或构建。
+试玩：https://fattoliu.github.io/dino-island/
 
-网页需要首次联网打开；此版本不承诺断网离线启动。未使用 Google 品牌或原版美术素材。
+轻触画面或 ↑ 跳跃；按住跳得更高；按住 ↓ 下蹲；Ⅱ 暂停。也支持空格和方向键。切到后台自动暂停，最高分保存在当前浏览器。
 
-## 在线试玩
-https://fattoliu.github.io/dino-island/
-
-网页与源码均公开。在 iPad Safari 打开即可，无需登录。GitHub Pages 使用 main 分支的根目录发布；根入口转到 dist/。修改 main 后自动重新部署。
+纯 HTML / CSS / JavaScript，无外部依赖。主文件 dist/index.html。
+本地启动：`python3 -m http.server 8080 --directory dist`。
+GitHub Pages 从 main 根目录发布。此版本不承诺断网启动。非 Google 官方游戏。
