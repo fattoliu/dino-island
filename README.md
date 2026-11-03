@@ -12,6 +12,6 @@
 网页需要首次联网打开；此版本不承诺断网离线启动。未使用 Google 品牌或原版美术素材。
 
 ## 在线试玩
-https://fatto-dino-island.foggysaffron.chatgpt.site
+https://fattoliu.github.io/dino-island/
 
-当前部署为仅所有者可访问，iPad 请登录同一 ChatGPT 账号。源码仓库与 Sites 发布存储独立；修改 GitHub 不会自动更新线上版本。
+网页与源码均公开。在 iPad Safari 打开即可，无需登录。GitHub Pages 使用 main 分支的根目录发布；根入口转到 dist/。修改 main 后自动重新部署。
