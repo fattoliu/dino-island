@@ -1,7 +1,62 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#faf9f5"><title>Dino Island</title><style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#faf9f5;overflow:hidden}body{display:grid;place-items:center;font-family:monospace;user-select:none;-webkit-user-select:none;overscroll-behavior:none}main{width:min(100%,1000px);padding:0 24px;position:relative}canvas{width:100%;height:280px;display:block;image-rendering:pixelated;touch-action:none}nav{height:60px;display:flex;align-items:center;justify-content:flex-end;gap:12px}button{border:0;background:transparent;color:#9b9e94;min-width:48px;min-height:48px;font:24px monospace;touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer}button:active{color:#53735a;background:#efeee7}#hint{position:absolute;left:0;right:0;top:43%;text-align:center;color:#8a8d81;font:12px monospace;pointer-events:none;letter-spacing:3px}#pause{font-size:18px}button:focus-visible{outline:2px solid #69876b}@media(max-width:600px){main{padding:0 16px}canvas{height:240px}nav{justify-content:space-between}}@media(max-height:400px){canvas{height:210px}nav{height:48px}}</style><main><canvas id="game" aria-label="像素恐龙游戏，轻触跳跃"></canvas><div id="hint">轻触开始</div><nav><button id="sound" aria-label="关闭声音" aria-pressed="false" title="声音">♪</button><button id="pause" aria-label="暂停或继续">Ⅱ</button><button id="duck" aria-label="按住下蹲">↓</button><button id="jump" aria-label="跳跃">↑</button></nav></main><script>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7faf5">
+<meta name="description" content="蓝色像素小恐龙，跳过小妖怪和小虫子，跃起吃小鸟。">
+<title>Dino Island · 蓝色小恐龙</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:#f7faf5;overflow:hidden}
+body{display:grid;place-items:center;font-family:monospace;user-select:none;-webkit-user-select:none;overscroll-behavior:none;color:#647c85}
+main{width:min(100%,1000px);padding:0 24px;position:relative}
+canvas{width:100%;height:280px;display:block;image-rendering:pixelated;touch-action:none;outline:none}
+nav{height:60px;display:flex;align-items:center;justify-content:flex-end;gap:12px}
+button{border:0;background:transparent;color:#6c8aa1;min-width:48px;min-height:48px;font:24px monospace;touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
+button:active{color:#2876cd;background:#e8f0ef}
+#hint{position:absolute;left:16px;right:16px;top:34%;text-align:center;color:#577588;font:12px monospace;pointer-events:none;letter-spacing:3px;line-height:2.2}
+#hint small{display:block;font-size:10px;letter-spacing:1px;color:#7e9098}
+#pause{font-size:18px}
+button:focus-visible,canvas:focus-visible{outline:2px solid #3b83cb;outline-offset:3px}
+.controls{margin:0 0 8px;text-align:right;font:10px monospace;letter-spacing:1px;color:#7c9197}
+@media(max-width:600px){main{padding:0 16px}canvas{height:240px}nav{justify-content:space-between}.controls{text-align:center;font-size:9px;letter-spacing:.5px}#hint{top:30%}}
+@media(max-height:400px){canvas{height:210px}nav{height:48px}.controls{display:none}}
+@media(prefers-reduced-motion:reduce){body{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<main>
+<canvas id="game" tabindex="0" aria-label="蓝色像素恐龙跑酷" aria-describedby="controls"></canvas>
+<div id="hint" role="status" aria-live="polite">轻触开始<small>跳过小怪 · 跃起吃鸟 +20</small></div>
+<nav aria-label="游戏控制">
+<button id="sound" aria-label="关闭声音" aria-pressed="false" title="声音">♪</button>
+<button id="pause" aria-label="暂停" title="暂停 / P">Ⅱ</button>
+<button id="duck" aria-label="按住下蹲，加快落地" title="下蹲 / ↓">↓</button>
+<button id="jump" aria-label="跳跃，按住跳得更高" title="跳跃 / 空格">↑</button>
+</nav>
+<p class="controls" id="controls">轻触 / 空格 跳跃 · 按住跳更高 · ↓ 下蹲 · P 暂停</p>
+</main>
+<script>
 'use strict';
-const c=document.getElementById('game'),x=c.getContext('2d'),hint=document.getElementById('hint');let W=900,H=250,G=205,state='ready',y=0,vy=0,held=false,duck=false,dist=0,speed=280,elapsed=0,timer=1.7,obs=[],last=0,best=0;try{best=+localStorage.getItem('dino-island-best')||0}catch{}const palettes=[['#faf9f5','#59675b','#8b9d75','#c3bda8','#d8d9ce','#e4c983'],['#faf6f1','#706557','#b39a78','#cbbda9','#e3d7ca','#dfb584'],['#f4f6f8','#596574','#8b9d9e','#b7c0c6','#d6dce0','#b5c5d5']];
-
+// No network requests or third-party dependencies. All art is drawn on the pixel grid.
+const c=document.getElementById('game'),x=c.getContext('2d'),hint=document.getElementById('hint');
+const pauseButton=document.getElementById('pause');
+const DINO_BLUE='#347fd2',DINO_LIGHT='#77b9ec',BIRD_BONUS=20;
+let W=900,H=250,G=205,state='ready',y=0,vy=0,held=false,duck=false;
+let dist=0,bonus=0,eaten=0,speed=280,elapsed=0,scroll=0,timer=1.2,obs=[],particles=[],popups=[];
+let last=0,best=0,spawnCount=0,chomp=0;
+try{best=Math.max(0,Number(localStorage.getItem('dino-island-best'))||0)}catch{}
+// Morning meadow, peach dusk, and lavender twilight. The dinosaur stays blue.
+const palettes=[
+  {bg:'#f7faf5',ink:'#5c7682',grass:'#76a879',earth:'#cfba90',cloud:'#bcd6db',sun:'#efbf63',wash:'#eff4e8',flower:'#d891ac'},
+  {bg:'#fff6ed',ink:'#8e7880',grass:'#aaa271',earth:'#d4a987',cloud:'#e4c7c3',sun:'#eb9f77',wash:'#f8eadc',flower:'#be8ab0'},
+  {bg:'#f4f4fc',ink:'#727b9c',grass:'#8eaba2',earth:'#b7b3d1',cloud:'#ced1e8',sun:'#d4b8df',wash:'#eaeefa',flower:'#ca99b7'}
+];
+const score=()=>Math.floor(dist)+bonus;
+const dinoX=()=>Math.round(Math.min(70,W*.16));
+const overlaps=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+const wrap=(n,size)=>((n%size)+size)%size;
 // Original, quiet chiptune accompaniment; synthesized locally, no downloads.
 let ac=null,master=null,muted=false,nextNote=0,noteIndex=0,scoreCue=0;
 const voices=new Set(),soundButton=document.getElementById('sound');
@@ -10,27 +65,239 @@ function soundUI(){soundButton.textContent=muted?'♪×':'♪';soundButton.setAt
 function unlockAudio(){try{if(!ac){const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;ac=new Audio();master=ac.createGain();master.gain.value=muted?0:.32;master.connect(ac.destination)}if(ac.state!=='running')ac.resume().catch(()=>{});}catch{}}
 function silence(){for(const v of voices){try{v.stop()}catch{}}voices.clear();nextNote=0}
 function tone(f,d=.1,volume=.1,type='square',when=0,to=0){if(!ac||muted||document.hidden)return;try{const t=when||ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(volume,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(master);voices.add(o);o.onended=()=>{voices.delete(o);o.disconnect();g.disconnect()};o.start(t);o.stop(t+d+.01)}catch{}}
-function effect(name){if(name==='duck')tone(260,.085,.13,'square',0,130);if(name==='jump')tone(470,.11,.22,'square',0,880);if(name==='score'){tone(880,.1,.18);tone(1175,.16,.18,'square',ac?ac.currentTime+.1:0)}if(name==='hit')tone(170,.28,.3,'sawtooth',0,48)}
+function effect(name){if(name==='duck')tone(260,.085,.13,'square',0,130);if(name==='jump')tone(470,.11,.22,'square',0,880);if(name==='score'){tone(880,.1,.18);tone(1175,.16,.18,'square',ac?ac.currentTime+.1:0)}if(name==='eat'){tone(1046,.08,.15);tone(1568,.12,.12,'square',ac?ac.currentTime+.06:0)}if(name==='hit')tone(170,.28,.3,'sawtooth',0,48)}
 const melody=[76,0,79,0,81,79,76,0,74,0,72,0,74,76,79,0,76,0,79,0,84,83,81,0,79,0,76,0,74,72,74,0];
 function music(){if(!ac||ac.state!=='running'||muted||state!=='run'||document.hidden)return;if(!nextNote||nextNote<ac.currentTime-.2)nextNote=ac.currentTime+.025;while(nextNote<ac.currentTime+.12){const n=melody[noteIndex%melody.length];if(n)tone(440*Math.pow(2,(n-69)/12),.15,.065,'square',nextNote);if(noteIndex%4===0){const bass=[48,53,48,55][Math.floor(noteIndex/8)%4];tone(440*Math.pow(2,(bass-69)/12),.3,.13,'triangle',nextNote)}noteIndex++;nextNote+=.2}}
 soundButton.onclick=()=>{muted=!muted;unlockAudio();silence();if(master)master.gain.setValueAtTime(muted?0:.32,ac.currentTime);try{localStorage.setItem('dino-island-muted',muted?'1':'0')}catch{}soundUI();music()};
 
-function resize(){let r=c.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);G=H-42;let d=Math.min(devicePixelRatio||1,2);c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);x.imageSmoothingEnabled=false}addEventListener('resize',resize);resize();
-function start(){unlockAudio();silence();noteIndex=scoreCue=0;state='run';dist=0;y=vy=0;held=duck=false;obs=[];timer=1.7;speed=280;hint.textContent=''}function pause(){if(state==='run'){silence();state='paused';held=duck=false;hint.textContent='Ⅱ'}else if(state==='paused'){unlockAudio();nextNote=0;state='run';hint.textContent=''}}function jump(){unlockAudio();if(state==='ready'||state==='over'){start();return}if(state==='paused'){pause();return}if(y===0){vy=-570;duck=false;effect('jump')}held=true}function end(){silence();effect('hit');state='over';held=duck=false;hint.textContent='GAME OVER  ↻';best=Math.max(best,Math.floor(dist));try{localStorage.setItem('dino-island-best',best)}catch{}}
+
+function resize(){
+  const r=c.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);G=H-42;
+  const d=Math.min(devicePixelRatio||1,2);c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);x.imageSmoothingEnabled=false;
+}
+addEventListener('resize',resize);resize();
+function syncPause(){pauseButton.textContent=state==='paused'?'▶':'Ⅱ';pauseButton.setAttribute('aria-label',state==='paused'?'继续游戏':'暂停')}
+function start(){
+  unlockAudio();silence();noteIndex=scoreCue=0;state='run';dist=bonus=eaten=elapsed=scroll=0;y=vy=0;held=duck=false;
+  obs=[];particles=[];popups=[];timer=1.15;spawnCount=0;chomp=0;speed=Math.min(280,Math.max(210,W*.78));hint.textContent='';syncPause();
+}
+function pause(){
+  if(state==='run'){silence();state='paused';held=duck=false;hint.textContent='已暂停 · 轻触继续'}
+  else if(state==='paused'){unlockAudio();nextNote=0;state='run';hint.textContent=''}
+  syncPause();
+}
+function jump(){
+  unlockAudio();
+  if(state==='ready'||state==='over'){start();return}
+  if(state==='paused'){pause();return}
+  if(y===0){vy=-570;duck=false;effect('jump')}
+  held=true;
+}
+function end(){
+  silence();effect('hit');state='over';held=duck=false;hint.innerHTML='GAME OVER ↻<small>轻触再来 · 吃到 '+eaten+' 只小鸟</small>';
+  best=Math.max(best,score());try{localStorage.setItem('dino-island-best',best)}catch{}
+}
 function crouchDown(){if(state!=='run'||duck)return;unlockAudio();duck=true;held=false;effect('duck');if(y>0)vy=Math.max(700,vy)}
-function bind(el){el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);jump()};el.onpointerup=el.onpointercancel=()=>held=false}bind(c);bind(document.getElementById('jump'));const db=document.getElementById('duck');db.onpointerdown=e=>{e.preventDefault();db.setPointerCapture(e.pointerId);crouchDown()};db.onpointerup=db.onpointercancel=()=>duck=false;document.getElementById('pause').onclick=pause;
-addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Space'||e.code==='ArrowUp')jump();if(e.code==='ArrowDown')crouchDown();if(e.code==='KeyP'||e.code==='Escape')pause()});addEventListener('keyup',e=>{if(['Space','ArrowUp'].includes(e.code))held=false;if(e.code==='ArrowDown')duck=false});document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='run')pause()});addEventListener('blur',()=>{if(state==='run')pause()});
+function bindJump(el){
+  el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);jump()};
+  el.onpointerup=el.onpointercancel=el.onlostpointercapture=()=>held=false;
+}
+bindJump(c);bindJump(document.getElementById('jump'));
+const db=document.getElementById('duck');
+db.onpointerdown=e=>{e.preventDefault();db.setPointerCapture(e.pointerId);crouchDown()};
+db.onpointerup=db.onpointercancel=db.onlostpointercapture=()=>duck=false;
+pauseButton.onclick=pause;
+addEventListener('keydown',e=>{
+  // Native Enter/Space activation on buttons must not also jump or start the game.
+  if(e.code==='Space'&&e.target instanceof HTMLButtonElement)return;
+  if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();
+  if(e.repeat)return;
+  if(e.code==='Space'||e.code==='ArrowUp')jump();
+  if(e.code==='ArrowDown')crouchDown();
+  if(e.code==='KeyP'||e.code==='Escape')pause();
+});
+addEventListener('keyup',e=>{if(['Space','ArrowUp'].includes(e.code))held=false;if(e.code==='ArrowDown')duck=false});
+// Keyboard activation for the two press-and-hold controls.
+for(const [button,action,release] of [[document.getElementById('jump'),jump,()=>held=false],[db,crouchDown,()=>duck=false]]){
+  button.addEventListener('keydown',e=>{if(['Enter','Space'].includes(e.code)){e.preventDefault();if(!e.repeat)action()}});
+  button.addEventListener('keyup',e=>{if(['Enter','Space'].includes(e.code)){e.preventDefault();release()}});
+  button.addEventListener('blur',release);
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='run')pause()});
+addEventListener('blur',()=>{if(state==='run')pause()});
 const dino=["            ##########","           ############","           ###  #######","           ############","           ############","           ############","           ######      ","           #########   ","#         ####         ","#        #####         ","##      ########       ","###    ####### #       ","####  ########         ","##############         ","##############         "," ############          ","  ###########          ","   #########           ","    #######            ","     #####             "];
 const crouch=["             ########## ","            ############","            ###  #######","############### ########","########################"," #######################","  ##############        ","    ##########          ","     #######            "];
-const bird=["        #       ","       ##       ","      ###       ","     ####       ","#   #####       ","#############   ","  ##############","   ##########   ","    ####        "];
-function pixels(rows,px,py,s,color){x.fillStyle=color;rows.forEach((row,j)=>{for(let i=0;i<row.length;i++)if(row[i]==='#')x.fillRect(Math.round(px+i*s),Math.round(py+j*s),s,s)})}
 const nums=['111101101101111','010110010010111','111001111100111','111001111001111','101101111001001','111100111001111','111100111101111','111001001001001','111101111101111','111101111001111'];function digits(str,px,py,color){x.fillStyle=color;for(let k=0;k<str.length;k++){let n=nums[+str[k]];for(let i=0;i<15;i++)if(n[i]==='1')x.fillRect(px+k*10+(i%3)*2,py+Math.floor(i/3)*2,2,2)}}
-function draw(){let p=palettes[Math.floor(dist/300)%3];document.body.style.background=p[0];x.fillStyle=p[0];x.fillRect(0,0,W,H);const px=Math.min(70,W*.16);x.fillStyle='#a3a69d';x.font='11px monospace';x.fillText('HI',W-142,24);digits(String(best).padStart(5,'0').slice(-5),W-120,15,'#a3a69d');digits(String(Math.floor(dist)).padStart(5,'0').slice(-5),W-50,15,p[1]);
-// A few restrained, pixel-edged clouds and a small sun; mostly whitespace.
-x.fillStyle=p[5];x.fillRect(W*.72,68,12,12);x.fillRect(W*.72+2,66,8,16);x.fillRect(W*.72-2,70,16,8);
-for(let i=0;i<3;i++){let q=Math.round(((i*310+180-elapsed*7)%(W+180)+W+180)%(W+180)-60),z=82+(i%2)*30;x.strokeStyle=p[4];x.lineWidth=1;x.beginPath();x.moveTo(q,z+10);x.lineTo(q+7,z+10);x.lineTo(q+7,z+5);x.lineTo(q+15,z+5);x.lineTo(q+15,z);x.lineTo(q+26,z);x.lineTo(q+26,z+5);x.lineTo(q+34,z+5);x.lineTo(q+34,z+10);x.lineTo(q+45,z+10);x.lineTo(q+45,z+13);x.lineTo(q,z+13);x.stroke()}
-x.fillStyle=p[3];x.fillRect(0,G+1,W,1);for(let i=0;i<30;i++){let q=Math.round(((i*63-elapsed*speed)%(W+80)+W+80)%(W+80));x.fillRect(q,G+7+(i%4)*5,2+(i%5)*2,1)}
-for(const o of obs){let q=Math.round(o.x),z=G-o.h;if(o.kind==='bird'){let rows=bird;pixels(rows,q,G-o.bottom-o.h,2,p[1]);if(Math.sin(elapsed*14)<0){x.fillStyle=p[0];x.fillRect(q+10,G-o.bottom-o.h,10,9);x.fillStyle=p[1];x.fillRect(q+14,G-o.bottom-4,6,12)}}else{x.fillStyle=p[2];x.fillRect(q+4,z,8,o.h);x.fillRect(q+6,z-2,4,2);x.fillRect(q-4,z+12,8,6);x.fillRect(q-4,z+5,4,11);x.fillRect(q+12,z+22,9,5);x.fillRect(q+17,z+13,4,12)}}
-let z=Math.round(G-y),isDuck=duck&&y===0;pixels(isDuck?crouch:dino,px,z-(isDuck?26:48),2,p[1]);let step=state==='run'&&y===0?Math.floor(elapsed*12)%2:0;x.fillStyle=p[1];x.fillRect(px+10,z-8,4,step?4:8);x.fillRect(px+10,z-(step?4:1),8,2);x.fillRect(px+23,z-8,4,step?8:4);x.fillRect(px+23,z-(step?1:4),8,2)}
-function update(dt){if(state!=='run')return;elapsed+=dt;dist+=speed*dt/35;speed=Math.min(510,280+dist*.12);if(Math.floor(dist/100)>scoreCue){scoreCue=Math.floor(dist/100);effect('score')}if(y>0||vy<0){vy+=(held&&vy<0?1250:1900)*dt;y-=vy*dt;if(y<0){y=0;vy=0}}timer-=dt;if(timer<=0){let b=dist>170&&Math.random()<.25;obs.push({x:W+30,kind:b?'bird':'cactus',w:b?30:21,h:b?18:30+Math.floor(Math.random()*13),bottom:b?30:0});timer=1.35+Math.random()*.7}let px=Math.min(70,W*.16);for(let o of obs){o.x-=speed*dt;let ph=duck&&y===0?22:44,pw=duck&&y===0?43:32;let a={x:px+5,y:G-y-ph,w:pw,h:ph-3},b={x:o.x+2,y:G-o.bottom-o.h,w:o.w-4,h:o.h-2};if(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y){end();break}}obs=obs.filter(o=>o.x>-60)}function frame(t){let dt=Math.min((t-last)/1000||0,.033);last=t;update(dt);music();draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
-</script></html>
+
+const monster=[
+ '  ##      ##  ',
+ '  ###    ###  ',
+ '  ##########  ',
+ ' ############ ',
+ '##############',
+ '###..####..###',
+ '###..####..###',
+ '##############',
+ '##############',
+ '#### #### ####',
+ ' ##   ##   ## '
+];
+const beetle=[
+ '  #        #  ',
+ '   #      #   ',
+ '    ######    ',
+ '  ##########  ',
+ ' ############ ',
+ '##..######..##',
+ '##############',
+ ' ############ ',
+ '  ##  ##  ##  '
+];
+const birdUp=[
+ '       ##       ',
+ '      ###       ',
+ '     ####       ',
+ '  ########      ',
+ ' ###.######     ',
+ '############# ##',
+ '  ############# ',
+ '   ##########   ',
+ '     ####       '
+];
+const birdDown=[
+ '                ',
+ '                ',
+ '                ',
+ '  ########      ',
+ ' ###.######     ',
+ '############# ##',
+ '  ############# ',
+ '   ##########   ',
+ '     ####       ',
+ '      ####      ',
+ '       ###      ',
+ '        ##      '
+];
+function pixels(rows,px,py,s,color,eyeColor){
+  rows.forEach((row,j)=>{for(let i=0;i<row.length;i++){
+    if(row[i]==='#'){x.fillStyle=color;x.fillRect(Math.round(px+i*s),Math.round(py+j*s),s,s)}
+    else if(row[i]==='.'&&eyeColor){x.fillStyle=eyeColor;x.fillRect(Math.round(px+i*s),Math.round(py+j*s),s,s)}
+  }});
+}
+function makeActor(kind,at=W+30){
+  if(kind==='bird')return {kind,x:at,w:32,h:18,bottom:60+Math.floor(Math.random()*32),phase:Math.random()*6};
+  if(kind==='monster')return {kind,x:at,w:28,h:24,bottom:0,phase:Math.random()*6};
+  if(kind==='beetle')return {kind,x:at,w:28,h:20,bottom:0,phase:Math.random()*6};
+  return {kind:'cactus',x:at,w:24,h:32+Math.floor(Math.random()*10),bottom:0,phase:0};
+}
+function spawn(){
+  // Meet every new character early, then use a varied, well-spaced mix.
+  const intro=['monster','bird','beetle','cactus','bird'];
+  const choices=['monster','beetle','cactus','bird','bird'];
+  const kind=spawnCount<intro.length?intro[spawnCount]:choices[Math.floor(Math.random()*choices.length)];
+  obs.push(makeActor(kind));spawnCount++;
+  timer=1.25+Math.random()*.6;
+}
+function actorBottom(o){return o.bottom+(o.kind==='bird'?Math.sin(elapsed*5+o.phase)*3:0)}
+function drawActor(o,p){
+  const q=Math.round(o.x),bottom=actorBottom(o),z=Math.round(G-bottom-o.h),step=Math.floor(elapsed*10+o.phase)%2;
+  if(o.kind==='bird'){
+    pixels(step?birdDown:birdUp,q,z,2,'#dba24d','#77583f');
+    x.fillStyle='#efc56e';x.fillRect(q+6,z+12,10,2);
+  }else if(o.kind==='monster'){
+    pixels(monster,q,z+2,2,'#aa80b8',p.bg);
+    x.fillStyle='#725986';x.fillRect(q+8,z+12,2,2);x.fillRect(q+20,z+12,2,2);
+    x.fillStyle='#bd98c8';x.fillRect(q+10,z+18,8,2);
+    x.fillStyle='#aa80b8';x.fillRect(q+(step?4:20),G-2,4,2);
+  }else if(o.kind==='beetle'){
+    pixels(beetle,q,z+2,2,'#d88169',p.bg);
+    x.fillStyle='#a75d55';x.fillRect(q+13,z+7,2,9);
+    x.fillStyle='#e6a677';x.fillRect(q+5,z+9,4,2);x.fillRect(q+20,z+9,4,2);
+    x.fillStyle='#b86c5c';x.fillRect(q+(step?4:20),G-2,4,2);
+  }else{
+    x.fillStyle=p.grass;x.fillRect(q+8,z,8,o.h);x.fillRect(q+10,z-2,4,2);
+    x.fillRect(q,z+12,8,6);x.fillRect(q,z+5,4,11);x.fillRect(q+16,z+22,8,5);x.fillRect(q+20,z+13,4,12);
+    x.fillStyle='#a7c48e';x.fillRect(q+10,z+4,2,o.h-8);
+  }
+}
+function eatBird(o){
+  o.eaten=true;bonus+=BIRD_BONUS;eaten++;chomp=.2;effect('eat');
+  const cx=o.x+16,cy=G-actorBottom(o)-9;
+  popups.push({x:cx,y:cy-9,life:.8});
+  for(let i=0;i<9;i++)particles.push({x:cx,y:cy,vx:(Math.random()-.5)*115,vy:-35-Math.random()*85,life:.35+Math.random()*.2,color:i%2?'#efc56e':'#77b9ec'});
+}
+function draw(){
+  const p=palettes[Math.floor(dist/300)%palettes.length];
+  document.body.style.background=p.bg;x.fillStyle=p.bg;x.fillRect(0,0,W,H);
+  x.fillStyle='#8b9ca4';x.font='11px monospace';x.fillText('HI',W-142,24);
+  digits(String(best).padStart(5,'0').slice(-5),W-120,15,'#8b9ca4');
+  digits(String(score()).padStart(5,'0').slice(-5),W-50,15,DINO_BLUE);
+  // Small bird tally, set apart from the distance/bonus score.
+  pixels(['  ##  ','#### #',' #### '],1,15,2,'#dba24d');
+  x.fillStyle='#b8aaa0';x.fillText('×',17,24);digits(String(eaten).padStart(2,'0'),30,15,'#aa936e');
+  // Keep the original calm whitespace and thin pixel horizon.
+  x.fillStyle=p.sun;const sunX=Math.round(W*.74);
+  x.fillRect(sunX,65,14,14);x.fillRect(sunX+2,63,10,18);x.fillRect(sunX-2,67,18,10);
+  for(let i=0;i<3;i++){
+    const q=Math.round(wrap(i*310+180-elapsed*7,W+180)-60),z=82+(i%2)*30;
+    x.strokeStyle=p.cloud;x.lineWidth=1;x.beginPath();
+    x.moveTo(q,z+10);x.lineTo(q+7,z+10);x.lineTo(q+7,z+5);x.lineTo(q+15,z+5);x.lineTo(q+15,z);
+    x.lineTo(q+26,z);x.lineTo(q+26,z+5);x.lineTo(q+34,z+5);x.lineTo(q+34,z+10);x.lineTo(q+45,z+10);x.lineTo(q+45,z+13);x.lineTo(q,z+13);x.stroke();
+  }
+  x.fillStyle=p.wash;x.fillRect(0,G+2,W,23);
+  x.fillStyle=p.grass;x.fillRect(0,G+1,W,1);
+  for(let i=0;i<Math.ceil(W/63)+3;i++){
+    const q=Math.round(wrap(i*63-scroll,W+80)-40);x.fillStyle=p.earth;
+    x.fillRect(q,G+8+(i%3)*5,2+(i%5)*2,1);
+    if(i%3===0){x.fillStyle=p.grass;x.fillRect(q+22,G-3,1,4);x.fillRect(q+20,G-2,5,1)}
+    if(i%5===0){x.fillStyle=p.flower;x.fillRect(q+21,G-5,3,2)}
+  }
+  // A quiet preview lets players discover the new cast before starting.
+  const actors=state==='ready'?[
+    {kind:'monster',x:W*.5,w:28,h:24,bottom:0,phase:0},
+    {kind:'beetle',x:W*.77,w:28,h:20,bottom:0,phase:1},
+    {kind:'bird',x:W*.6,w:32,h:18,bottom:67,phase:1}
+  ]:obs;
+  for(const o of actors)drawActor(o,p);
+  const px=dinoX(),z=Math.round(G-y),isDuck=duck&&y===0;
+  pixels(isDuck?crouch:dino,px,z-(isDuck?26:48),2,DINO_BLUE);
+  // A few light-blue pixels, with the classic silhouette left intact.
+  x.fillStyle=DINO_LIGHT;
+  if(isDuck){x.fillRect(px+12,z-16,12,2);x.fillRect(px+16,z-14,6,2)}
+  else{x.fillRect(px+12,z-20,10,2);x.fillRect(px+14,z-18,6,2)}
+  if(chomp>0&&!isDuck){x.fillStyle=p.bg;x.fillRect(px+34,z-34,12,4)}
+  const step=state==='run'&&y===0?Math.floor(elapsed*12)%2:0;
+  x.fillStyle=DINO_BLUE;x.fillRect(px+10,z-8,4,step?4:8);x.fillRect(px+10,z-(step?4:1),8,2);
+  x.fillRect(px+23,z-8,4,step?8:4);x.fillRect(px+23,z-(step?1:4),8,2);
+  for(const part of particles){x.fillStyle=part.color;x.fillRect(Math.round(part.x),Math.round(part.y),2,2)}
+  for(const pop of popups){x.fillStyle=DINO_BLUE;x.fillRect(Math.round(pop.x)-8,Math.round(pop.y)+4,6,2);x.fillRect(Math.round(pop.x)-6,Math.round(pop.y)+2,2,6);digits(String(BIRD_BONUS),Math.round(pop.x),Math.round(pop.y),DINO_BLUE)}
+}
+function update(dt){
+  if(state!=='run')return;
+  elapsed+=dt;dist+=speed*dt/35;scroll+=speed*dt;
+  // Keep a fair reaction window on a narrow phone as the run speeds up.
+  speed=Math.min(510,Math.max(210,W*.78),280+dist*.12);
+  if(Math.floor(dist/100)>scoreCue){scoreCue=Math.floor(dist/100);effect('score')}
+  chomp=Math.max(0,chomp-dt);
+  if(y>0||vy<0){vy+=(held&&vy<0?1250:1900)*dt;y-=vy*dt;if(y<=0){y=0;vy=0}}
+  timer-=dt;if(timer<=0)spawn();
+  const px=dinoX(),isDuck=duck&&y===0;
+  const player={x:px+5,y:G-y-(isDuck?22:44),w:isDuck?39:35,h:isDuck?19:41};
+  for(const o of obs){
+    o.x-=speed*dt;
+    const box={x:o.x+3,y:G-actorBottom(o)-o.h+3,w:o.w-6,h:o.h-5};
+    if(overlaps(player,box)){
+      if(o.kind==='bird'){if(y>6)eatBird(o)}
+      else{end();break}
+    }
+  }
+  obs=obs.filter(o=>o.x>-60&&!o.eaten);
+  for(const part of particles){part.life-=dt;part.x+=part.vx*dt;part.y+=part.vy*dt;part.vy+=210*dt}
+  particles=particles.filter(part=>part.life>0);
+  for(const pop of popups){pop.life-=dt;pop.y-=30*dt}popups=popups.filter(pop=>pop.life>0);
+}
+function frame(t){const dt=Math.min((t-last)/1000||0,.033);last=t;update(dt);music();draw();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
