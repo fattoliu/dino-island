@@ -1,169 +1,196 @@
 import * as THREE from './vendor/three.module.min.js';
 
-// All geometry is original, generated locally. X = forward, Y = up, Z = axle.
-export const VEHICLES = [
-  {id:'gclass', name:'奔驰大G',shortName:'大G',color:'#c5d8c8',category:'越野车'},
-  {id:'landcruiser',name:'丰田兰德酷路泽',shortName:'兰德酷路泽',color:'#e7d8b4',category:'越野车'},
-  {id:'bmw',name:'宝马赛车',shortName:'宝马赛车',color:'#3f9bdf',category:'赛车'},
-  {id:'ferrari',name:'法拉利赛车',shortName:'法拉利',color:'#eb3933',category:'赛车'},
-  {id:'truck',name:'重型卡车',shortName:'重型卡车',color:'#238faf',category:'大卡车'},
-  {id:'fire',name:'消防车',shortName:'消防车',color:'#e53d35',category:'救援车'},
-  {id:'police',name:'警车',shortName:'警车',color:'#edf2f5',category:'城市车'},
-  {id:'taxi',name:'出租车',shortName:'出租车',color:'#ffc837',category:'城市车'},
-  {id:'crane',name:'大吊车',shortName:'大吊车',color:'#f5b930',category:'工程车'},
-  {id:'excavator',name:'履带挖掘机',shortName:'挖掘机',color:'#eeb42c',category:'工程车'}
+// Original toy sculptures, inspired by the warmth and clarity of vehicle emoji.
+// No emoji artwork, brand logos, fonts, textures or external models are copied.
+// +X is the nose; +Y is up. Labels are real geometry in BOTH renderers.
+const catalog = [
+ ['gclass','方盒子大G','大G','🚙','越野车','#55bc75','#fff2b0'],
+ ['landcruiser','探险越野车','兰德酷路泽','🚙','越野车','#ffbd45','#fff5da'],
+ ['bmw','蓝色运动赛车','宝马赛车','🏎️','赛车','#338feb','#fff5da'],
+ ['ferrari','流线超级跑车','法拉利','🏎️','赛车','#ff554e','#fff0ae'],
+ ['truck','长途大卡车','大卡车','🚛','大卡车','#35bfc4','#ffd356'],
+ ['fire','云梯消防车','消防车','🚒','救援车','#ff554c','#fff5db'],
+ ['police','110巡逻警车','警车','🚓','救援车','#faf9ed','#3374dd'],
+ ['taxi','城市出租车','出租车','🚕','城市车','#ffd43d','#ffffff'],
+ ['crane','伸臂大吊车','大吊车','🏗️','工程车','#ffbf36','#5567bc'],
+ ['excavator','履带挖掘机','挖掘机','🚜','工程车','#ffc233','#5068bd'],
+ ['ambulance','120救护车','救护车','🚑','救援车','#fff9ec','#f35b65'],
+ ['bus','彩虹城市巴士','城市巴士','🚌','巴士','#36b9dc','#ffe783'],
+ ['schoolbus','快乐小校车','校车','🚍','巴士','#ffcf35','#f28b37'],
+ ['minibus','小小接驳巴士','小巴','🚐','巴士','#a379e9','#ffe7a0'],
+ ['pickup','探险皮卡','皮卡','🛻','城市车','#39bb9b','#ffdf74'],
+ ['van','快递小货车','小货车','🚐','城市车','#fb9c4d','#fff3d0'],
+ ['camper','森林露营车','房车','🚐','旅行车','#67cba5','#fff3cf'],
+ ['garbage','城市清洁车','清洁车','🚛','工程车','#65c76b','#ffdc62'],
+ ['mixer','水泥搅拌车','搅拌车','🚚','工程车','#68aaf3','#ffcd4c'],
+ ['tractor','农场拖拉机','拖拉机','🚜','农场车','#78bf4c','#ffe565'],
+ ['compact','糖果小轿车','小轿车','🚗','城市车','#f46e8d','#ffefc0'],
+ ['icecream','甜筒冰淇淋车','冰淇淋车','🍦','旅行车','#f5a3cd','#8ae2cb']
 ];
+const rescueLiveries = {
+ police:[['sky','天空巡逻','#eef7ff','#3987d9'],['night','深蓝巡逻','#3c61b4','#fff4cb']],
+ ambulance:[['mint','薄荷急救','#f2fff7','#21b9a8'],['blue','蓝色急救','#f1f8ff','#3984e8']],
+ fire:[['orange','橙色救援','#ff883d','#fff0b5'],['cherry','樱桃消防','#d94062','#ffecc7']],
+ taxi:[['mint','薄荷出租','#58cfb0','#fff0ab'],['orange','橘子出租','#ff984e','#fff0ab']],
+ schoolbus:[['sunny','向日葵校车','#ffdf58','#ee9b36'],['orange','橘子校车','#ffa549','#fff0a0']]
+};
+export const VEHICLES = catalog.map(([id,name,shortName,emoji,category,color,accent])=>({
+ id,name,shortName,emoji,category,color,accent,
+ liveries:[{id:'default',name:'经典原色',color,accent},...(rescueLiveries[id]||[
+  ['ocean','海洋蓝','#51b9ed','#fff1b8'],['berry','莓果紫','#a28ae9','#ffd88a'],['peach','蜜桃橙','#ff9c69','#fff0bd']
+ ]).map(([id,name,color,accent])=>({id,name,color,accent}))]
+}));
 const PI=Math.PI;
-const mat=(color,metalness=0,roughness=.5,extra={})=>new THREE.MeshStandardMaterial({color,metalness,roughness,...extra});
-function materials(){return {rubber:mat('#171d24',.05,.89),tread:mat('#242b33',.05,.8),dark:mat('#202c38',.45,.43),black:mat('#0b1520',.2,.42),chrome:mat('#b8c7d1',.85,.23),alloy:mat('#dee6e9',.8,.28),brake:mat('#68737c',.8,.5),red:mat('#db302e',.25,.3),seat:mat('#583b2e',0,.86),glass:mat('#183e53',.35,.16,{transparent:true,opacity:.78,side:THREE.DoubleSide}),lamp:mat('#fff8d6',.2,.14,{emissive:'#fff0b6',emissiveIntensity:.45}),tail:mat('#e92932',.2,.23,{emissive:'#f30c17',emissiveIntensity:.3}),blue:mat('#258dff',.3,.22,{emissive:'#004dff',emissiveIntensity:.45}),amber:mat('#ffad23',.2,.2,{emissive:'#ff7400',emissiveIntensity:.3}),white:mat('#f4f5ee',.2,.4)};}
+const material=(color,roughness=.38,metalness=.12,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 let M;
-const boxGeo=new THREE.BoxGeometry(1,1,1);
-function mesh(g,geometry,material,x=0,y=0,z=0,rotation=null){const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);if(rotation)o.rotation.set(...rotation);o.castShadow=true;o.receiveShadow=true;g.add(o);return o;}
-function box(g,x,y,z,w,h,d,m,r=.035){if(r<=0){const o=mesh(g,boxGeo,m,x,y,z);o.scale.set(w,h,d);return o;}return mesh(g,rounded(w,h,d,r),m,x,y,z);}
-function rounded(w,h,d,r){r=Math.min(r,w/3,h/3,d/3);const s=new THREE.Shape(),a=-w/2+r,b=-h/2+r,c=w-2*r,e=h-2*r;s.moveTo(a,b);s.lineTo(a+c,b);s.lineTo(a+c,b+e);s.lineTo(a,b+e);s.closePath();const g=new THREE.ExtrudeGeometry(s,{depth:d-2*r,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:r,bevelThickness:r,curveSegments:3});g.translate(0,0,-d/2+r);g.computeVertexNormals();return g;}
-function cylinder(g,x,y,z,r,h,m,axis='z',r2=r,n=24){return mesh(g,new THREE.CylinderGeometry(r2,r,h,n,1),m,x,y,z,axis==='z'?[PI/2,0,0]:axis==='x'?[0,0,PI/2]:null);}
-function torus(g,x,y,z,r,t,m,arc=PI*2){return mesh(g,new THREE.TorusGeometry(r,t,6,32,arc),m,x,y,z);}
-function bar(g,a,b,r,m){const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b),delta=bv.clone().sub(av);const o=mesh(g,new THREE.CylinderGeometry(r,r,delta.length(),8),m,...av.add(bv).multiplyScalar(.5).toArray());o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());return o;}
-function profile(g,points,width,m,z=0,bevel=.03){const s=new THREE.Shape();points.forEach((p,i)=>i?s.lineTo(...p):s.moveTo(...p));s.closePath();const geo=new THREE.ExtrudeGeometry(s,{depth:width,bevelEnabled:bevel>0,bevelSize:bevel,bevelThickness:bevel,bevelSegments:2,steps:1});geo.translate(0,0,z-width/2);return mesh(g,geo,m);}
-function pane(g,points,z,m=M.glass){return profile(g,points,.014,m,z,.004);}
-function plate(g,x,y,z,w,h,m,axis='x'){return axis==='x'?box(g,x,y,z,.035,h,w,m,.008):box(g,x,y,z,w,h,.035,m,.008);}
-// Merge all static meshes with the same material INSIDE each detachable component.
-// This preserves component interactions while cutting hundreds of details to ~100 calls.
-function batch(group){group.updateMatrixWorld(true);const buckets=new Map();group.traverse(o=>{if(!o.isMesh)return;const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();const transform=group.matrixWorld.clone().invert().multiply(o.matrixWorld);g.applyMatrix4(transform);let a=buckets.get(o.material);if(!a)buckets.set(o.material,a=[]);a.push(g);});group.clear();for(const [material,geos] of buckets){const count=geos.reduce((n,g)=>n+g.attributes.position.count,0),positions=new Float32Array(count*3),normals=new Float32Array(count*3);let offset=0;for(const g of geos){positions.set(g.attributes.position.array,offset);normals.set(g.attributes.normal.array,offset);offset+=g.attributes.position.array.length;g.dispose();}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(positions,3));geo.setAttribute('normal',new THREE.BufferAttribute(normals,3));geo.computeBoundingSphere();mesh(group,geo,material);}}
-function part(ctx,id,name,target,make){const group=new THREE.Group();group.name=name;make(group);batch(group);const center=new THREE.Box3().setFromObject(group).getCenter(new THREE.Vector3());for(const o of group.children)o.geometry.translate(-center.x,-center.y,-center.z);group.position.set(...target).add(center);ctx.group.add(group);ctx.parts.push({id,name,group,target:group.position.clone()});return group;}
-function wheel(g,r=.5,w=.32,style='road'){cylinder(g,0,0,0,r,w,M.rubber);torus(g,0,0,w/2,r*.79,r*.16,M.rubber);torus(g,0,0,-w/2,r*.79,r*.16,M.rubber);for(let i=0;i<36;i++){let a=i*PI/18;for(let z of [-w*.3,w*.3]){const t=box(g,Math.sin(a)*(r+.006),Math.cos(a)*(r+.006),z,r*.115,.024,w*.45,M.tread,0);t.rotation.z=-a+(z>0?.14:-.14);}}for(const side of [-1,1]){const z=side*(w/2+.016);cylinder(g,0,0,z,r*.65,.025,M.chrome);cylinder(g,0,0,z+side*.018,r*.53,.026,M.black);cylinder(g,0,0,z+side*.036,r*.42,.028,M.brake);box(g,r*.32,0,z+side*.06,r*.14,r*.33,.045,M.red);for(let i=0;i<5;i++){const a=i*PI*2/5;const spoke=box(g,Math.sin(a)*r*.28,Math.cos(a)*r*.28,z+side*.07,r*.115,r*.55,.045,M.alloy,.012);spoke.rotation.z=-a;}cylinder(g,0,0,z+side*.1,r*.14,.05,M.chrome);for(let i=0;i<5;i++){const a=i*PI*2/5;cylinder(g,Math.sin(a)*r*.105,Math.cos(a)*r*.105,z+side*.13,.022,.018,M.dark, 'z',.022,8);}}}
-function seats(g,x,y,z,scale=1){box(g,x,y,z,.48*scale,.16*scale,.5*scale,M.seat,.06);box(g,x-.2*scale,y+.28*scale,z,.15*scale,.6*scale,.5*scale,M.seat,.055);box(g,x-.2*scale,y+.64*scale,z,.15*scale,.18*scale,.3*scale,M.seat,.055);}
-function interior(g,length=1.6,width=1.5){box(g,0,0,0,length,.12,width,M.dark);for(let z of [-width*.26,width*.26])seats(g,.08,.17,z);box(g,length*.4,.52,0,.28,.26,width,M.black,.06);const steering=torus(g,length*.24,.7,-width*.25,.18,.025,M.dark);steering.rotation.y=PI/2;bar(g,[length*.24,.7,-width*.25],[length*.38,.5,-width*.25],.025,M.chrome);box(g,length*.4,.68,.12,.035,.12,.23,M.blue,.01);box(g,0,.2,0,.55,.22,.18,M.black,.03);}
-function grille(g,x,y,w,h,type='bars'){plate(g,x,y,0,w,h,M.black);if(type==='kidney'){for(let z of [-w*.23,w*.23]){box(g,x+.025,y,z,.04,h*.95,w*.36,M.chrome,.06);box(g,x+.055,y,z,.04,h*.81,w*.27,M.black,.04);for(let i=-2;i<=2;i++)box(g,x+.08,y,z+i*w*.045,.025,h*.72,.018,M.chrome,.004);}}else for(let i=0;i<7;i++)box(g,x+.025,y-h*.37+i*h*.12,0,.027,.018,w*.9,M.chrome,.002);}
-function lights(g,x,y,w,circular=false){for(let s of [-1,1]){if(circular){cylinder(g,x,y,s*w*.37,.19,.07,M.chrome,'x');cylinder(g,x+.04,y,s*w*.37,.145,.025,M.lamp,'x');torus(g,x+.06,y,s*w*.37,.12,.015,M.white).rotation.y=PI/2;}else{box(g,x,y,s*w*.37,.055,.16,w*.2,M.chrome,.03);box(g,x+.04,y,s*w*.37,.025,.09,w*.17,M.lamp,.02);}box(g,x,y-.21,s*w*.39,.04,.07,.13,M.amber,.015);}}
-function mirror(g,x,y,z,paint){bar(g,[x,y,z],[x+.08,y+.08,z*1.12],.025,M.dark);box(g,x+.08,y+.12,z*1.16,.23,.14,.16,paint,.04);box(g,x-.045,y+.12,z*1.16,.018,.1,.12,M.chrome,.01);}
-function spoiler(g,w,paint){for(let s of [-1,1])box(g,0,-.17,s*w*.32,.1,.34,.06,M.dark,.01);box(g,0,0,0,.4,.08,w,paint,.025);for(let s of [-1,1])box(g,0,.06,s*w/2,.42,.19,.04,M.dark,.015);}
+function materials(){return {
+ rubber:material('#273447',.79),dark:material('#344960',.5),chrome:material('#d9e7ee',.28,.5),
+ white:material('#fff9e7'),glass:material('#255c7a',.2,.22),shine:material('#a2dbea',.22),
+ lamp:material('#fff3b9',.25,.1,{emissive:'#ffe8a0',emissiveIntensity:.25}),
+ red:material('#f14b62'),blue:material('#3998ef'),amber:material('#ffbc39'),seat:material('#ebaf6a'),
+};}
+function mesh(g,geo,mat,x=0,y=0,z=0,rotation){const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);if(rotation)o.rotation.set(...rotation);o.castShadow=true;o.receiveShadow=true;g.add(o);return o;}
+// A genuine rounded cuboid: a circular-corner section with a rounded depth bevel.
+function rounded(w,h,d,r){r=Math.min(r,w*.43,h*.43,d*.43);const a=w/2-r,b=h/2-r,c=Math.min(r,a*.8,b*.8),s=new THREE.Shape();s.moveTo(-a+c,-b);s.lineTo(a-c,-b);s.quadraticCurveTo(a,-b,a,-b+c);s.lineTo(a,b-c);s.quadraticCurveTo(a,b,a-c,b);s.lineTo(-a+c,b);s.quadraticCurveTo(-a,b,-a,b-c);s.lineTo(-a,-b+c);s.quadraticCurveTo(-a,-b,-a+c,-b);const geo=new THREE.ExtrudeGeometry(s,{depth:d-2*r,bevelEnabled:true,bevelThickness:r,bevelSize:r,bevelSegments:3,steps:1,curveSegments:3});geo.translate(0,0,-d/2+r);const positions=geo.attributes.position,normals=geo.attributes.normal;for(let i=0;i<positions.count;i++){const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i),clamp=(v,e)=>Math.max(-e,Math.min(e,v));const n=new THREE.Vector3((x-clamp(x,a-c))/((r+c)*(r+c)),(y-clamp(y,b-c))/((r+c)*(r+c)),(z-clamp(z,d/2-r))/(r*r)).normalize();normals.setXYZ(i,n.x,n.y,n.z);}return geo;}
+function box(g,x,y,z,w,h,d,m,r=.08){return mesh(g,r?rounded(w,h,d,r):new THREE.BoxGeometry(w,h,d),m,x,y,z);}
+function cyl(g,x,y,z,r,h,m,axis='z',r2=r,n=16){return mesh(g,new THREE.CylinderGeometry(r2,r,h,n),m,x,y,z,axis==='z'?[PI/2,0,0]:axis==='x'?[0,0,PI/2]:null);}
+function ball(g,x,y,z,w,h,d,m){const o=mesh(g,new THREE.SphereGeometry(1,16,10),m,x,y,z);o.scale.set(w,h,d);return o;}
+function ring(g,x,y,z,r,t,m,arc=PI*2){return mesh(g,new THREE.TorusGeometry(r,t,6,20,arc),m,x,y,z);}
+function bar(g,a,b,r,m){const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),delta=end.clone().sub(start);const o=mesh(g,new THREE.CylinderGeometry(r,r,delta.length(),8),m,...start.add(end).multiplyScalar(.5).toArray());o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());return o;}
+function profile(g,points,width,m,z=0,r=.06){const s=new THREE.Shape();points.forEach((p,i)=>i?s.lineTo(...p):s.moveTo(...p));s.closePath();const geo=new THREE.ExtrudeGeometry(s,{depth:width,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:3,steps:1});geo.translate(0,0,z-width/2);return mesh(g,geo,m);}
+function batch(group){group.updateMatrixWorld(true);const inv=group.matrixWorld.clone().invert(),buckets=new Map();group.traverse(o=>{if(!o.isMesh)return;const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();g.applyMatrix4(inv.clone().multiply(o.matrixWorld));if(!buckets.has(o.material))buckets.set(o.material,[]);buckets.get(o.material).push(g);o.geometry.dispose();});group.clear();for(const [m,geos] of buckets){const count=geos.reduce((n,g)=>n+g.attributes.position.count,0),positions=new Float32Array(count*3),normals=new Float32Array(count*3);let at=0;for(const g of geos){positions.set(g.attributes.position.array,at);normals.set(g.attributes.normal.array,at);at+=g.attributes.position.array.length;g.dispose();}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(positions,3));g.setAttribute('normal',new THREE.BufferAttribute(normals,3));g.computeBoundingSphere();mesh(group,g,m);}}
+function part(ctx,id,name,make){const g=new THREE.Group();g.name=name;make(g);batch(g);const center=new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3());g.children.forEach(o=>o.geometry.translate(-center.x,-center.y,-center.z));g.position.copy(center);ctx.group.add(g);ctx.parts.push({id,name,group:g,target:center.clone()});return g;}
+function fixed(ctx,make){const g=new THREE.Group();make(g);batch(g);ctx.group.add(g);}
+// Compact 5 x 7 vector glyphs. Every stroke is a mesh, never a canvas texture.
+const FONT={
+ '0':['01110','11011','11011','11011','11011','11011','01110'],
+ '1':['00110','01110','00110','00110','00110','00110','01111'],
+ '2':['01110','11011','00011','00110','01100','11000','11111'],
+ 'T':['11111','11111','00100','00100','00100','00100','00100'],
+ 'A':['01110','11011','11011','11111','11011','11011','11011'],
+ 'X':['11011','11011','01110','00100','01110','11011','11011'],
+ 'I':['11111','00100','00100','00100','00100','00100','11111']
+};
+function textLabel(g,text,x,y,z,height,m,side=1){const holder=new THREE.Group(),u=height/7;holder.position.set(x,y,z);holder.rotation.y=side<0?PI:0;const width=(text.length*6-1)*u;[...text].forEach((ch,k)=>{const rows=FONT[ch];if(!rows)return;rows.forEach((row,ri)=>{let start=-1;for(let c=0;c<=5;c++){if(c<5&&row[c]==='1'){if(start<0)start=c;}else if(start>=0){box(holder,-width/2+(k*6+(start+c)/2)*u,(3-ri)*u,0,(c-start)*u,u,.018,m,0);start=-1;}}});});g.add(holder);}
+function badge(g,x,y,z,m,side=1){box(g,x,y,z,.15,.44,.028,m,.02);box(g,x,y,z,.44,.15,.03,m,.02);}
+function wheel(g,x,y,z,r=.5,w=.34,accent=M.white){cyl(g,x,y,z,r*.85,w,M.rubber);ring(g,x,y,z+w*.31,r*.73,r*.25,M.rubber);ring(g,x,y,z-w*.31,r*.73,r*.25,M.rubber);for(const side of [-1,1]){cyl(g,x,y,z+side*(w*.51),r*.58,.045,M.chrome);cyl(g,x,y,z+side*(w*.59),r*.42,.045,accent);cyl(g,x,y,z+side*(w*.67),r*.18,.045,M.white);for(let j=0;j<5;j++){const a=j*2*PI/5;cyl(g,x+Math.sin(a)*r*.31,y+Math.cos(a)*r*.31,z+side*w*.67,r*.047,.018,M.dark,'z',r*.047,6);}}}
+function wheels(ctx,axles,W=1.8,R=.49){for(const [i,x] of axles.entries())for(const s of [-1,1])part(ctx,`wheel-${i}-${s}`,`${i===axles.length-1?'前':i===0?'后':'中'}${s>0?'右':'左'}车轮`,g=>wheel(g,x,R+.025,s*(W/2+.03),R,.34,ctx.accent));}
+function chassis(ctx,L,W,R=.49){fixed(ctx,g=>{box(g,0,R+.04,0,L*.85,.23,W*.7,M.dark,.1);for(const z of [-W*.3,W*.3])box(g,0,R-.03,z,L*.64,.16,.12,M.chrome,.04);});}
+function face(ctx,L,W,y,round=false){part(ctx,'front','笑脸车头与大灯',g=>{box(g,L/2+.04,y-.18,0,.17,.2,W*.95,ctx.accent,.08);box(g,L/2+.135,y-.12,0,.03,.11,.6,M.dark,.04);for(const s of [-1,1]){if(round){cyl(g,L/2+.06,y+.1,s*W*.34,.19,.1,M.chrome,'x');cyl(g,L/2+.125,y+.1,s*W*.34,.145,.03,M.lamp,'x');}else{box(g,L/2+.06,y+.1,s*W*.33,.1,.2,.38,M.chrome,.08);box(g,L/2+.12,y+.11,s*W*.33,.035,.135,.3,M.lamp,.055);}box(g,L/2+.12,y-.24,s*W*.37,.04,.055,.13,M.amber,.02);}});part(ctx,'rear','尾灯与后保险杠',g=>{box(g,-L/2-.02,y-.18,0,.15,.2,W*.94,ctx.accent,.07);for(const s of [-1,1])box(g,-L/2-.11,y+.05,s*W*.35,.055,.22,.22,M.red,.07);box(g,-L/2-.11,y-.16,0,.025,.09,.42,M.white,.02);});}
+function mirrors(g,x,y,W,paint){for(const s of [-1,1]){bar(g,[x,y,s*W*.48],[x+.04,y+.04,s*(W*.5+.18)],.04,M.dark);box(g,x+.03,y+.09,s*(W*.5+.19),.25,.19,.17,paint,.07);box(g,x-.1,y+.09,s*(W*.5+.19),.018,.12,.12,M.shine,.03);}}
+function beacon(g,x,y,W=1){box(g,x,y,0,.36,.12,W,M.white,.05);box(g,x,y+.13,-W*.26,.31,.24,W*.43,M.blue,.1);box(g,x,y+.13,W*.26,.31,.24,W*.43,M.red,.1);}
+function seat(g,x,y,z){box(g,x,y,z,.55,.18,.47,M.seat,.07);box(g,x-.2,y+.23,z,.17,.5,.47,M.seat,.07);}
 
-function passenger(ctx,cfg){if(cfg.id==='ferrari'){supercar(ctx);return;}const {id,color}=cfg;const suv=id==='gclass'||id==='landcruiser',gclass=id==='gclass',sport=id==='bmw'||id==='ferrari',ferrari=id==='ferrari';const paint=ctx.paint;const L=gclass?4.65:suv?5.05:sport?4.65:4.8,W=suv?1.95:sport?2.05:1.9,R=suv?.51:sport?.43:.45,Y=R+.04,ax=suv?1.54:1.5,belt=suv?1.46:ferrari?.99:sport?1.09:1.18,roof=gclass?2.42:suv?2.27:ferrari?1.53:sport?1.76:1.94;ctx.dimensions={length:L+.2,width:W+.38,height:roof+.3};
- const chassis=new THREE.Group();box(chassis,0,Y-.12,0,L*.8,.19,W*.68,M.dark,.05);for(let x of [-ax,ax]){cylinder(chassis,x,Y,0,.065,W,M.brake);for(let z of [-W*.33,W*.33])cylinder(chassis,x,Y+.13,z,.09,.25,M.chrome,'y');}box(chassis,-.55,Y-.21,.38,1.6,.08,.22,M.chrome,.025);batch(chassis);ctx.group.add(chassis);
- for(let x of [-ax,ax])for(let s of [-1,1])part(ctx,`wheel-${x}-${s}`,`${x>0?'前':'后'}${s>0?'右':'左'}车轮`,[x,Y,s*(W/2+.015)],g=>wheel(g,R,suv?.32:.29));
- part(ctx,'body','车身外壳',[0,0,0],g=>{const p=[[-L/2,.7],[-L/2,belt-.1],[-L*.39,belt+.03],[L*.29,belt+.03],[L/2,belt-.12],[L/2,.65]];profile(g,p,W,paint,0,.06);for(let s of [-1,1]){box(g,0,.69,s*(W/2+.02),L*.92,.12,.09,M.dark,.025);for(let x of [-ax,ax]){const arch=torus(g,x,Y,s*(W/2+.045),R+.055,.062,suv?M.dark:paint,PI);arch.rotation.z=0;}box(g,-L*.39,belt-.18,s*(W/2+.055),.25,.15,.035,M.tail,.025);}box(g,L/2-.08,.79,0,.16,.23,W+.03,M.dark,.04);box(g,-L/2+.08,.77,0,.16,.2,W+.03,M.dark,.04);for(let s of [-1,1])cylinder(g,-L/2-.02,.63,s*.59,.067,.2,M.chrome,'x');});
- const hoodStart=gclass?1.1:suv?.6:.55,hoodLen=L/2-hoodStart-.12;
- part(ctx,'hood','发动机盖',[hoodStart+hoodLen/2,belt+.075,0],g=>{box(g,0,0,0,hoodLen,.13,W*.92,paint,.065);for(let s of [-1,1])bar(g,[-hoodLen*.4,.08,s*W*.25],[hoodLen*.4,.04,s*W*.28],.009,paint);if(sport)for(let s of [-1,1])for(let i=0;i<4;i++)box(g,-.15+i*.1,.075,s*.53,.05,.013,.2,M.black,.005);});
- const rear=gclass?-2.15:suv?-1.98:ferrari?-1.05:-1.27,front=gclass?1.05:suv?.69:ferrari?.85:.68,topFront=gclass?.75:suv?.14:.02,topRear=gclass?-2.1:suv?-1.62:ferrari?-.69:-.98;
- part(ctx,'glass','整套车窗',[0,0,0],g=>{for(let s of [-1,1])pane(g,[[rear+.08,belt+.12],[front-.06,belt+.12],[topFront-.05,roof-.1],[topRear+.08,roof-.1]],s*(W*.455));profile(g,[[front,belt+.1],[topFront,roof-.09],[topFront-.035,roof-.09],[front-.035,belt+.1]],W*.9,M.glass,0,.004);profile(g,[[rear,belt+.1],[topRear,roof-.09],[topRear+.035,roof-.09],[rear+.035,belt+.1]],W*.88,M.glass,0,.004);for(let z of [-.42,.42])bar(g,[front+.015,belt+.12,z-.2],[front-.05,belt+.25,z+.13],.016,M.black);});
- part(ctx,'roof','车顶与立柱',[0,0,0],g=>{box(g,(topFront+topRear)/2,roof,0,topFront-topRear+.16,.12,W*.94,paint,.07);for(let s of [-1,1]){const z=s*W*.47;bar(g,[front,belt,z],[topFront,roof,z],suv?.055:.043,paint);bar(g,[rear,belt,z],[topRear,roof,z],.05,paint);bar(g,[gclass?-.25:-.65,belt,z],[gclass?-.25:-.65,roof-.03,z],.04,M.black);if(gclass){bar(g,[-1.35,belt,z],[-1.35,roof-.03,z],.05,paint);bar(g,[-2.12,belt,z],[1.05,belt,z],.025,paint);}}});
- for(let s of [-1,1])part(ctx,`doors-${s}`,s>0?'右侧车门':'左侧车门',[-.37,(belt+.78)/2,s*(W/2+.035)],g=>{box(g,gclass?.2:0,0,0,gclass?2.55:suv?2.5:2.05,belt-.78,.055,paint,.025);if(gclass){box(g,.12,0,s*.035,.018,belt-.8,.016,M.black,.002);box(g,-.98,0,s*.035,.018,belt-.8,.016,M.black,.002);for(let x of [-.85,.23])for(let y of [-.13,.16])box(g,x,y,s*.065,.1,.045,.04,paint,.008);}for(let x of gclass?[-.72,.4]:suv?[-.67,.6]:[-.5,.65])box(g,x,.11,s*.04,.21,.045,.05,M.chrome,.014);bar(g,[-1,-.08,s*.04],[1,-.08,s*.04],.015,M.dark);if(suv){box(g,-.05,-.33,s*.08,2.35,.08,.18,M.dark,.02);box(g,-.05,-.28,s*.13,2.2,.018,.14,M.chrome,.005);}mirror(g,gclass?1.4:.94,roof-belt-.02,s*.04+s*.05,paint);if(id==='police'){box(g,0,.02,s*.042,1.9,.18,.02,M.dark,.004);cylinder(g,.15,.05,s*.06,.14,.02,M.blue);}if(id==='taxi')for(let i=0;i<12;i++)box(g,-.9+i*.155,.03,s*.04,.075,.065,.018,M.black,0);});
- part(ctx,'interior','座椅与驾驶台',[-.2,.91,0],g=>{interior(g,2,W*.8);if(suv)for(let z of [-.4,.4])seats(g,-1,.17,z);});
- part(ctx,'front','前灯与进气格栅',[L/2+.045,belt-.19,0],g=>{grille(g,0,0,W*.55,.28,id==='bmw'?'kidney':'bars');lights(g,.025,.02,W,gclass);box(g,.02,-.27,0,.07,.1,.44,M.white,.01);if(gclass){cylinder(g,.065,0,0,.12,.025,M.chrome,'x');}});
- part(ctx,'rear','尾门与尾灯',[-L/2-.025,belt-.05,0],g=>{box(g,0,0,0,.08,.35,W*.86,paint,.04);for(let s of [-1,1]){box(g,-.06,.04,s*W*.37,.035,.12,.29,M.tail,.025);box(g,-.085,.02,s*W*.37,.015,.025,.21,M.white,.005);}box(g,-.065,-.08,0,.015,.1,.43,M.white,.008);});
- if(gclass)part(ctx,'spare','外挂备胎',[-L/2-.24,1.52,0],g=>{const w=new THREE.Group();wheel(w,.43,.2);w.rotation.y=PI/2;g.add(w);cylinder(g,-.14,0,0,.36,.14,paint,'x');cylinder(g,-.22,0,0,.22,.02,M.chrome,'x');});
- else if(sport)part(ctx,'spoiler','赛车尾翼',[-1.88,1.61,0],g=>spoiler(g,W*.97,paint));
- else if(id==='police')part(ctx,'lightbar','红蓝警灯',[-.5,roof+.16,0],g=>{box(g,0,-.05,0,.35,.08,1.35,M.dark,.025);box(g,0,.04,-.35,.3,.16,.55,M.blue,.035);box(g,0,.04,.35,.3,.16,.55,M.tail,.035);});
- else if(id==='taxi')part(ctx,'sign','出租车顶灯',[-.5,roof+.2,0],g=>{box(g,0,0,0,.3,.23,.65,M.lamp,.055);for(let s of [-1,1]){box(g,s*.16,0,0,.02,.06,.35,M.black,.005);}});
- else part(ctx,'roofrack','行李架',[-.68,roof+.15,0],g=>{for(let s of [-1,1])bar(g,[-1,.06,s*.72],[1,.06,s*.72],.035,M.chrome);for(let x of [-.8,0,.8])bar(g,[x,0,-.76],[x,0,.76],.035,M.dark);box(g,-.2,.2,0,1.15,.3,1.1,M.dark,.1);});
- if(sport)part(ctx,'diffuser','空气动力套件',[0,0,0],g=>{box(g,L/2,.59,0,.35,.06,W+.1,M.dark,.02);box(g,-L/2,.62,0,.34,.08,W,M.dark,.02);for(let z=-.7;z<=.71;z+=.28)box(g,-L/2,.54,z,.4,.17,.035,M.dark,.006);for(let s of [-1,1])box(g,0,.55,s*(W/2+.05),2.5,.07,.16,M.dark,.015);if(ferrari)for(let s of [-1,1]){pane(g,[[-1.1,1.07],[-.45,1.07],[-.75,1.32],[-1.1,1.25]],s*(W/2+.05),M.black);}else{for(let s of [-1,1])box(g,.1,belt+.16,s*.48,3.7,.018,.1,M.white,.002);}});
-}
-function truckVehicle(ctx,cfg){const fire=cfg.id==='fire',crane=cfg.id==='crane',semi=cfg.id==='truck',paint=ctx.paint,W=2.05,L=6.35,cy=fire?2.85:2.95;ctx.dimensions={length:L+.3,width:2.55,height:crane?3.5:3.25};
- const fixed=new THREE.Group();for(let z of [-.62,.62])box(fixed,0,.7,z,L-.35,.25,.15,M.dark,.02);for(let x of [-2.5,-1.5,0,1.7,2.7])box(fixed,x,.7,0,.12,.18,W*.85,M.brake,.02);for(let x of [-2.15,-.95,2.05]){cylinder(fixed,x,.58,0,.085,W+.1,M.brake);for(let z of [-.7,.7]){box(fixed,x,.58,z,.75,.09,.12,M.brake,.02);cylinder(fixed,x,.75,z,.12,.27,M.dark,'y');}}batch(fixed);ctx.group.add(fixed);
- for(let x of [-2.15,-.95,2.05])for(let s of [-1,1])part(ctx,`wheel-${x}-${s}`,`${x>0?'前':x< -1.5?'后':'中'}${s>0?'右':'左'}车轮`,[x,.58,s*1.06],g=>wheel(g,.54,.36,'truck'));
- part(ctx,'cab','驾驶室外壳',[1.92,0,0],g=>{profile(g,[[-.88,.98],[-.88,1.91],[.84,1.91],[1.1,1.4],[1.1,.98]],W,paint,0,.06);box(g,-.84,(cy+1.1)/2,0,.12,cy-1.1,W,paint,.04);for(let z of [-.47,.47])seats(g,-.23,1.55,z,.9);box(g,.72,1.91,0,.3,.16,1.82,M.dark,.04);box(g,.83,1.62,0,.53,.55,W+.04,paint,.06);for(let s of [-1,1]){box(g,.1,.97,s*1.06,1.65,.12,.22,M.chrome,.02);box(g,.03,1.14,s*1.075,1.55,.055,.16,M.dark,.01);box(g,-.8,1.47,s*1.07,.1,.65,.07,M.chrome,.025);}});
- part(ctx,'windshield','前挡风玻璃',[1.92,0,0],g=>{profile(g,[[1.03,1.99],[.72,cy-.3],[.67,cy-.3],[.98,1.99]],1.79,M.glass,0,.015);bar(g,[1.04,2,-.75],[.83,2.18,-.12],.015,M.dark);bar(g,[1.04,2,.16],[.83,2.18,.75],.015,M.dark);box(g,.85,cy-.22,0,.18,.09,1.98,paint,.025);});
- for(let s of [-1,1])part(ctx,`cab-door-${s}`,s>0?'右驾驶室车门':'左驾驶室车门',[1.75,1.75,s*1.06],g=>{box(g,0,-.13,0,1.35,.76,.07,paint,.045);pane(g,[[-.6,.28],[.67,.28],[.4,cy-2.03],[-.6,cy-1.93]],s*.046);bar(g,[-.6,.27,s*.04],[-.6,cy-1.94,s*.04],.035,paint);bar(g,[-.61,cy-1.94,s*.04],[.4,cy-2.03,s*.04],.035,paint);box(g,-.38,.05,s*.06,.22,.05,.05,M.chrome,.015);bar(g,[.66,.6,s*.06],[.68,.63,s*.36],.026,M.chrome);box(g,.68,.55,s*.37,.16,.32,.2,M.dark,.04);box(g,.59,.55,s*.37,.014,.25,.15,M.chrome,.015);});
- part(ctx,'bumper','保险杠与大灯',[3.07,1.17,0],g=>{box(g,0,-.1,0,.2,.25,2.2,M.chrome,.035);grille(g,.08,.38,1.3,.5);for(let s of [-1,1]){box(g,.12,.05,s*.82,.1,.22,.35,M.black,.025);for(let z of [-.08,.08])cylinder(g,.19,.06,s*.82+z,.062,.025,M.lamp,'x');}box(g,.12,-.09,0,.02,.11,.43,M.white,.005);});
- part(ctx,'cab-roof','驾驶室顶棚',[1.8,cy+.03,0],g=>{box(g,0,0,0,1.8,.12,2.1,paint,.07);for(let z of [-.8,-.4,0,.4,.8])box(g,.78,.09,z,.12,.07,.14,M.amber,.018);if(fire){for(let s of [-1,1])box(g,.25,.18,s*.68,.36,.24,.4,M.blue,.05);}else{for(let s of [-1,1])cylinder(g,-.3,.14,s*.65,.1,.37,M.chrome,'x',.14);}});
- part(ctx,'fuel','油箱与工具箱',[-.1,.93,0],g=>{for(let s of [-1,1]){cylinder(g,-.12,.05,s*.83,.25,.85,M.chrome,'x');for(let x of [-.42,.19])box(g,x,.05,s*1.055,.07,.32,.025,M.dark,.007);}box(g,0,.15,0,.8,.35,.6,M.dark,.04);});
- if(semi){part(ctx,'sleeper','长途休息舱',[.33,1.88,0],g=>{box(g,0,0,0,1.2,1.75,2.02,paint,.12);for(let s of [-1,1]){box(g,0,.22,s*1.02,.65,.34,.028,M.glass,.06);for(let y of [-.2,-.33,-.46])box(g,-.1,y,s*1.03,.55,.035,.03,M.chrome,.01);}box(g,0,.91,0,1.16,.15,1.95,paint,.07);});
- part(ctx,'exhaust','双排气烟囱',[-.38,1.93,0],g=>{for(let s of [-1,1]){cylinder(g,0,0,s*.99,.085,2.15,M.chrome,'y');cylinder(g,0,1.08,s*.99,.057,.025,M.black,'y');for(let y of [-.65,-.4,-.15])cylinder(g,0,y,s*.99,.105,.04,M.brake,'y');}});
- part(ctx,'coupling','牵引鞍座',[-1.75,1,0],g=>{box(g,0,-.06,0,2.3,.12,1.6,M.chrome,.045);cylinder(g,0,.08,0,.6,.12,M.dark,'y');box(g,.35,.15,0,.75,.06,.17,M.black,.015);for(let s of [-1,1])box(g,0,-.08,s*.99,2.7,.14,.43,paint,.05);});
- }else if(fire){part(ctx,'equipment-body','消防器材舱',[-1.29,1.77,0],g=>{box(g,0,0,0,3.35,1.55,2.08,paint,.075);for(let s of [-1,1]){for(let x of [-1.08,0,1.08]){box(g,x,0,s*1.06,.98,1.13,.045,M.chrome,.025);for(let y=-.48;y<.5;y+=.11)box(g,x,y,s*1.09,.9,.02,.015,M.brake,.003);box(g,x,-.3,s*1.12,.3,.05,.04,M.dark,.01);}box(g,0,-.62,s*1.09,3.2,.14,.025,M.white,.01);}for(let s of [-1,1])box(g,-1.71,-.3,s*.82,.04,.24,.22,M.tail,.02);});
- part(ctx,'ladder','云梯',[-1.05,2.72,0],g=>{for(let z of [-.43,.43]){box(g,0,0,z,4,.11,.08,M.chrome,.018);box(g,-.2,.16,z*.8,3.5,.08,.065,M.alloy,.014);}for(let x=-1.85;x<1.91;x+=.28){bar(g,[x,0,-.43],[x,0,.43],.026,M.chrome);bar(g,[x-.15,.16,-.34],[x-.15,.16,.34],.021,M.alloy);}for(let x of [-1.4,1.3])box(g,x,-.13,0,.16,.2,1.18,M.dark,.02);});
- part(ctx,'hose','水管与水泵',[-2.99,1.7,0],g=>{cylinder(g,0,0,0,.38,.9,M.red,'x');for(let x=-.3;x<=.31;x+=.075){const t=torus(g,x,0,0,.3,.047,M.rubber);t.rotation.y=PI/2;}for(let s of [-1,1]){cylinder(g,-.09,-.48,s*.61,.09,.22,M.chrome,'x');cylinder(g,-.22,-.48,s*.61,.13,.03,M.red,'x');}bar(g,[-.2,-.1,.4],[-.3,-.4,.7],.06,M.dark);});
- }else{part(ctx,'deck','吊车作业平台',[-1.15,1.06,0],g=>{box(g,0,0,0,3.85,.25,2.24,paint,.055);for(let s of [-1,1]){box(g,0,.17,s*.97,3.5,.045,.2,M.dark,.01);for(let i=0;i<10;i++)box(g,-1.6+i*.35,-.05,s*1.13,.18,.12,.02,M.black,.005);}cylinder(g,-.15,.25,0,.69,.27,M.dark,'y');});
- part(ctx,'outriggers','稳定支腿',[-1.2,.79,0],g=>{for(let x of [-1.1,1.1]){box(g,x,0,0,.28,.19,2.7,M.dark,.03);for(let s of [-1,1]){box(g,x,0,s*1.2,.3,.25,.6,paint,.02);cylinder(g,x,-.25,s*1.4,.075,.5,M.chrome,'y');box(g,x,-.5,s*1.4,.38,.06,.4,M.dark,.018);}}});
- part(ctx,'boom','伸缩吊臂',[-1.4,1.48,0],g=>{box(g,0,.12,0,1.1,.5,1.3,paint,.06);const boom=new THREE.Group();boom.rotation.z=.18;box(boom,1.28,.5,0,3.55,.42,.48,paint,.05);box(boom,2.55,.5,0,1.5,.29,.34,M.dark,.025);box(boom,3.23,.5,0,.65,.2,.23,M.chrome,.02);for(let z of [-.31,.31]){bar(boom,[-.35,.12,z],[1.55,.35,z],.08,M.chrome);bar(boom,[-.35,.12,z],[.55,.22,z],.12,paint);}cylinder(boom,-.24,.48,0,.18,.68,M.brake);g.add(boom);box(g,-.72,.25,0,.44,.72,1.45,M.dark,.045);});
- part(ctx,'hook','吊钩与钢索',[2.05,2.6,0],g=>{bar(g,[0,.08,0],[0,-.75,0],.015,M.dark);box(g,0,-.8,0,.2,.22,.23,paint,.03);const hook=torus(g,.02,-1,0,.12,.035,M.chrome,PI*1.6);hook.rotation.z=.6;});
- }
-}
-function excavator(ctx){const paint=ctx.paint;ctx.dimensions={length:6.2,width:2.6,height:3.25};const base=new THREE.Group();box(base,-.65,.48,0,2.8,.3,1.8,M.dark,.055);cylinder(base,-.65,.8,0,.65,.38,M.brake,'y');batch(base);ctx.group.add(base);
- for(let s of [-1,1])part(ctx,`track-${s}`,s>0?'右履带':'左履带',[-.65,.47,s*1.01],g=>{profile(g,[[-1.55,-.23],[-1.7,0],[-1.55,.3],[1.2,.3],[1.42,0],[1.2,-.23]],.5,M.rubber,0,.04);for(let x=-1.25;x<1.3;x+=.5){cylinder(g,x,0,s*.27,.25,.09,M.brake);cylinder(g,x,0,s*.33,.11,.03,M.chrome);}for(let i=0;i<19;i++){const x=-1.5+i*.15;for(let y of [-.29,.35]){box(g,x,y,0,.13,.08,.58,M.tread,.009);box(g,x,y+(y>0?.047:-.047),0,.07,.025,.61,M.brake,.005);}}for(let x of [-1.57,1.32])for(let i=0;i<7;i++){const a=-PI/2+i*PI/6;const o=box(g,x+(x<0?-1:1)*Math.cos(a)*.18,Math.sin(a)*.29+.03,0,.12,.08,.58,M.tread,.008);o.rotation.z=(x<0?1:-1)*a;}});
- part(ctx,'engine','发动机配重舱',[-1.45,1.28,.15],g=>{box(g,0,0,0,1.65,.82,1.85,paint,.15);for(let s of [-1,1])for(let i=0;i<8;i++)box(g,-.4+i*.12,.1,s*.94,.055,.32,.018,M.black,.006);box(g,-.86,-.04,0,.04,.25,1.35,M.dark,.03);for(let s of [-1,1])box(g,-.89,.15,s*.6,.025,.12,.2,M.tail,.02);});
- part(ctx,'cab-base','驾驶室底座',[-.35,1.15,-.65],g=>{box(g,0,0,0,1.25,.37,1.04,paint,.05);box(g,.3,-.23,-.64,.7,.09,.35,M.dark,.02);box(g,.3,-.09,-.65,.7,.025,.34,M.chrome,.008);});
- part(ctx,'cab-windows','全景驾驶舱',[-.4,1.5,-.65],g=>{for(let s of [-1,1])pane(g,[[-.59,0],[.61,0],[.47,1.25],[-.59,1.25]],s*.49);profile(g,[[.61,0],[.47,1.25],[.44,1.25],[.58,0]],.96,M.glass,0,.004);box(g,-.61,.62,0,.025,1.2,.96,M.glass,.01);for(let z of [-.5,.5]){bar(g,[-.61,0,z],[-.61,1.3,z],.045,M.dark);bar(g,[.61,0,z],[.47,1.3,z],.045,M.dark);bar(g,[-.61,.12,z],[.6,.12,z],.035,paint);}box(g,-.05,1.31,0,1.23,.12,1.12,paint,.06);});
- part(ctx,'seat','座椅与操纵杆',[-.45,1.46,-.65],g=>{seats(g,0,0,0,1.1);for(let s of [-1,1]){box(g,0,.12,s*.33,.4,.15,.12,M.dark,.025);bar(g,[.1,.2,s*.33],[.16,.5,s*.33],.025,M.chrome);cylinder(g,.16,.51,s*.33,.05,.1,M.black,'y');}});
- part(ctx,'platform','回转平台',[-.5,1,.1],g=>{box(g,0,0,0,3.05,.18,2.2,paint,.055);cylinder(g,.48,.22,.5,.22,.6,M.brake);for(let z of [-.2,1])box(g,.45,.28,z,.6,.55,.11,paint,.04);});
- part(ctx,'boom','挖掘机主臂',[.2,1.3,.55],g=>{profile(g,[[-.25,-.08],[.1,-.15],[1.28,1.54],[1.9,1.63],[1.86,1.94],[1.1,1.95]],.35,paint,0,.045);for(let p of [[0,0],[1.18,1.76],[1.86,1.78]]){cylinder(g,p[0],p[1],0,.12,.43,M.chrome);cylinder(g,p[0],p[1],.23,.07,.025,M.dark);}bar(g,[.25,.03,-.28],[1.35,1.64,-.28],.075,M.chrome);bar(g,[.25,.03,-.28],[.8,.84,-.28],.12,paint);bar(g,[-.18,.15,.24],[.95,1.9,.24],.03,M.dark);});
- part(ctx,'dipper','挖掘机小臂',[2.06,3.08,.55],g=>{profile(g,[[-.15,.12],[.18,.11],[.87,-1.35],[.6,-1.48]],.3,paint,0,.035);cylinder(g,0,0,0,.12,.4,M.chrome);cylinder(g,.73,-1.37,0,.11,.4,M.chrome);bar(g,[.2,-.12,-.23],[.7,-1.1,-.23],.055,M.chrome);bar(g,[.2,-.12,-.23],[.48,-.65,-.23],.085,M.dark);});
- part(ctx,'bucket','挖斗',[2.78,1.66,.55],g=>{for(let z of [-.43,.43])profile(g,[[-.12,.06],[.21,.04],[.53,-.7],[-.14,-.66],[-.45,-.35]],.055,paint,z,.025);profile(g,[[-.43,-.35],[-.15,-.65],[.53,-.7],[.52,-.6],[-.1,-.55],[-.34,-.29]],.86,M.dark,0,.015);for(let z of [-.35,-.12,.12,.35]){const t=box(g,.53,-.66,z,.29,.1,.13,M.chrome,.015);t.rotation.z=.17;}cylinder(g,0,0,0,.1,1.03,M.brake);});
- part(ctx,'hydraulics','液压管路',[.1,1.45,.55],g=>{for(let z of [-.32,.32]){bar(g,[0,0,z],[.4,.9,z],.03,M.rubber);bar(g,[.4,.9,z],[1.08,1.8,z],.03,M.rubber);bar(g,[1.08,1.8,z],[1.9,1.68,z],.03,M.rubber);}box(g,-.2,-.02,0,.42,.25,.55,M.dark,.035);});
- part(ctx,'exhaust','排气管与护栏',[-1.72,1.9,.6],g=>{cylinder(g,0,0,0,.07,.8,M.dark,'y');cylinder(g,0,.4,0,.09,.08,M.chrome,'y');for(let z of [-.3,.3])bar(g,[-.5,-.22,z],[.45,-.22,z],.025,M.chrome);});
- part(ctx,'worklights','作业灯与警示灯',[-.5,2.93,-.65],g=>{for(let z of [-.42,.42]){box(g,.51,-.06,z,.16,.14,.2,M.dark,.03);box(g,.6,-.06,z,.025,.09,.14,M.lamp,.015);}cylinder(g,-.38,.09,.28,.1,.18,M.amber,'y');});
-}
-
-export function buildVehicle(id='gclass'){
- M=materials();
- const cfg=VEHICLES.find(v=>v.id===id)||VEHICLES[0];
- const ctx={group:new THREE.Group(),parts:[],paint:mat(cfg.color,.62,.27),dimensions:{length:5,width:2,height:2.5}};
- ctx.group.name=cfg.name;
- if(cfg.id==='excavator')excavator(ctx);else if(['truck','fire','crane'].includes(cfg.id))truckVehicle(ctx,cfg);else passenger(ctx,cfg);
- ctx.group.userData.vehicleId=cfg.id;
- const size=new THREE.Box3().setFromObject(ctx.group).getSize(new THREE.Vector3());ctx.dimensions={length:size.x,width:size.z,height:size.y};
- return {group:ctx.group,parts:ctx.parts,dimensions:ctx.dimensions,animate(time,drive=false){if(!drive)return;for(const p of ctx.parts)if(p.id.startsWith('wheel-'))p.group.rotation.z=-time*3;}};
-}
-
-// Smooth longitudinal stations, not a stretched box: shoulders, waist and nose
-// each have their own width and height. Smooth normals preserve painted curves.
+// Longitudinal hand-sculpted cross sections give cars a real shoulder, waist,
+// curved fender volume and tapered nose, rather than a recolored rectangular box.
 function coachwork(g,stations,m){
- const ring=[[0,1],[.55,.99],[.88,.91],[1,.68],[.98,.16],[.72,0],[0,0],[-.72,0],[-.98,.16],[-1,.68],[-.88,.91],[-.55,.99]],p=[],idx=[];
+ const ring=[[0,1],[.52,.99],[.83,.91],[.98,.7],[1,.4],[.94,.1],[.72,0],[0,0],[-.72,0],[-.94,.1],[-1,.4],[-.98,.7],[-.83,.91],[-.52,.99]],p=[],idx=[],n=ring.length;
  for(const [x,w,lo,hi] of stations)for(const [z,y] of ring)p.push(x,lo+(hi-lo)*y,z*w);
- const n=ring.length;for(let k=0;k<stations.length-1;k++)for(let i=0;i<n;i++){const a=k*n+i,b=k*n+(i+1)%n,c=(k+1)*n+i,d=(k+1)*n+(i+1)%n;idx.push(a,b,c,b,d,c);}
+ for(let k=0;k<stations.length-1;k++)for(let i=0;i<n;i++){let a=k*n+i,b=k*n+(i+1)%n,c=(k+1)*n+i,d=(k+1)*n+(i+1)%n;idx.push(a,b,c,b,d,c);}
  for(let i=1;i<n-1;i++){idx.push(0,i+1,i);let o=(stations.length-1)*n;idx.push(o,o+i,o+i+1);}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setIndex(idx);geo.computeVertexNormals();mesh(g,geo,m);
 }
-function quad(g,points,m){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(points.flat(),3));geo.setIndex([0,1,2,0,2,3]);geo.computeVertexNormals();return mesh(g,geo,m);}
-function supercar(ctx){
- const paint=ctx.paint;const fixed=new THREE.Group();box(fixed,0,.36,0,3.8,.15,1.45,M.dark,.04);for(let x of [-1.5,1.5])cylinder(fixed,x,.47,0,.06,2.06,M.brake);batch(fixed);ctx.group.add(fixed);
- for(let x of [-1.5,1.5])for(let side of [-1,1])part(ctx,`wheel-${x}-${side}`,`${x>0?'前':'后'}${side>0?'右':'左'}车轮`,[x,.47,side*1.04],g=>wheel(g,.43,.3));
- part(ctx,'body','流线型车身',[0,0,0],g=>{
-  coachwork(g,[[-2.32,.83,.53,.94],[-2.12,.99,.49,1.08],[-1.55,1.09,.48,1.13],[-1.1,1.05,.45,1.04],[-.6,.96,.44,.98],[.2,.94,.44,.97],[.8,1.02,.45,1.02],[1.45,1.04,.46,.99],[1.9,.97,.48,.87],[2.3,.83,.51,.69],[2.4,.69,.54,.64]],paint);
-  for(let side of [-1,1]){for(let x of [-1.5,1.5])torus(g,x,.47,side*1.065,.474,.028,paint,PI);bar(g,[-.92,.54,side*1.015],[.9,.54,side*.99],.035,M.dark);}
+
+function car(ctx,cfg){const id=cfg.id,suv=['gclass','landcruiser'].includes(id),sport=['bmw','ferrari'].includes(id),compact=id==='compact',pickup=id==='pickup',ferrari=id==='ferrari',G=id==='gclass';const W=ferrari?2.14:sport?1.95:1.8,L=compact?3.35:ferrari?4.65:pickup?4.75:suv?4.5:4.3,R=suv||pickup?.53:ferrari?.43:.48,belt=suv?1.4:ferrari?.94:sport?1.12:1.18,roof=suv?2.34:ferrari?1.43:sport?1.8:compact?2.08:1.92,ax=compact?1.01:L*.32,curvy=!suv&&!pickup;
+ chassis(ctx,L,W,R);wheels(ctx,[-ax,ax],W,R);
+ part(ctx,'body','圆润车身外壳',g=>{
+  if(ferrari)coachwork(g,[[-L/2,.79,.52,.86],[-1.96,1.02,.5,1.02],[-1.5,1.1,.47,1.1],[-.7,.99,.46,.97],[.3,.96,.46,.94],[1.15,1.07,.48,1.02],[1.65,1.04,.49,.92],[2.08,.89,.51,.72],[L/2,.7,.53,.62]],ctx.paint);
+  else if(curvy)coachwork(g,[[-L/2,.62,.64,.97],[-L*.42,.83,.58,1.16],[-L*.3,.94,.55,1.29],[-.4,.92,.55,1.27],[.5,.91,.55,1.27],[L*.32,.94,.57,1.2],[L*.44,.82,.61,1.1],[L/2,.65,.65,.96]],ctx.paint);
+  else box(g,0,.94,0,L,.66,W,ctx.paint,.23);
+  if(sport)box(g,0,.53,0,L*.86,.1,W,ctx.accent,.05);
+  for(const side of [-1,1])for(const x of [-ax,ax])ring(g,x,R+.025,side*(W*.5+.025),R+.04,.065,suv?M.dark:ctx.paint,PI);
  });
- part(ctx,'hood','楔形前机盖',[0,0,0],g=>{
-  coachwork(g,[[.68,.7,.97,1.025],[1,.75,.96,1.015],[1.45,.76,.87,.955],[1.9,.72,.74,.81],[2.25,.59,.64,.7]],paint);
-  for(let side of [-1,1])bar(g,[.78,1.035,side*.47],[1.91,.8,side*.53],.009,M.dark);
+ const front=G?.9:pickup?.8:compact?1.01:ferrari?.92:.84,rear=pickup?-.83:G?-1.8:suv?-1.7:compact?-1.4:ferrari?-1.28:-1.48,topFront=G?.72:compact?.38:ferrari?-.13:.1,topRear=G?-1.72:ferrari?-.76:compact?-.82:curvy?-.92:rear+.2;
+ part(ctx,'hood','圆鼓鼓发动机盖',g=>{
+  if(ferrari){coachwork(g,[[.88,.66,.93,.98],[1.3,.77,.87,.96],[1.7,.77,.75,.86],[2.07,.66,.61,.73],[2.24,.54,.58,.66]],ctx.paint);for(const side of [-1,1])bar(g,[1.03,.99,side*.32],[1.96,.76,side*.38],.018,ctx.accent);}
+  else if(curvy){coachwork(g,[[front,.72,1.15,1.28],[front+.23,.82,1.15,1.31],[L*.42,.8,1.03,1.2],[L*.49,.65,.95,1.07]],ctx.paint);}
+  else box(g,(front+L/2)/2,belt,0,L/2-front+.12,.24,W*.94,ctx.paint,.12);
  });
- part(ctx,'glass','弧形全景车窗',[0,0,0],g=>{
-  quad(g,[[.9,1.04,-.82],[.9,1.04,.82],[.03,1.46,.61],[.03,1.46,-.61]],M.glass);
-  for(let side of [-1,1])quad(g,[[-1.05,1.04,side*.86],[.82,1.04,side*.82],[.03,1.46,side*.62],[-.72,1.46,side*.66]],M.glass);
-  quad(g,[[-1.15,1.06,.85],[-1.15,1.06,-.85],[-.72,1.46,-.66],[-.72,1.46,.66]],M.glass);
-  bar(g,[.85,1.07,-.6],[.65,1.15,.13],.013,M.black);
+ part(ctx,'glass','蓝色全景车窗',g=>{
+  if(curvy)coachwork(g,[[rear,W*.42,belt,belt+.06],[rear+.15,W*.46,belt,roof-.27],[topRear,W*.44,belt,roof-.03],[(topFront+topRear)/2,W*.44,belt,roof+.03],[topFront,W*.43,belt,roof-.04],[front-.16,W*.46,belt,belt+.25],[front,W*.41,belt,belt+.04]],M.glass);
+  else profile(g,[[rear,belt+.03],[front,belt+.03],[topFront,roof-.08],[topRear,roof-.08]],W*.88,M.glass,0,.09);
  });
- part(ctx,'roof','跑车车顶',[0,0,0],g=>{
-  coachwork(g,[[-.8,.65,1.42,1.49],[-.6,.69,1.45,1.53],[-.15,.68,1.45,1.52],[.09,.62,1.42,1.48]],paint);
-  for(let side of [-1,1]){bar(g,[.91,1.03,side*.83],[.03,1.48,side*.63],.03,paint);bar(g,[-1.15,1.06,side*.86],[-.74,1.48,side*.67],.04,paint);}
+ part(ctx,'roof','糖果车顶与窗框',g=>{
+  if(curvy)coachwork(g,[[topRear-.08,W*.32,roof-.05,roof+.01],[topRear+.15,W*.38,roof-.02,roof+.13],[topFront-.17,W*.38,roof-.02,roof+.13],[topFront+.06,W*.31,roof-.07,roof+.01]],ctx.paint);
+  else box(g,(topFront+topRear)/2,roof,0,topFront-topRear+.25,.17,W*.96,ctx.paint,.08);
+  for(const side of [-1,1]){const z=side*W*(curvy?.38:.47),lower=side*W*(curvy?.43:.47);bar(g,[front,belt,lower],[topFront,roof-.03,z],.048,ctx.paint);bar(g,[rear,belt,lower],[topRear,roof-.03,z],.052,ctx.paint);if(!sport)bar(g,[(front+rear)*.5,belt,side*W*.46],[(topFront+topRear)*.5,roof-.03,z],.04,ctx.paint);}
  });
- for(let side of [-1,1])part(ctx,`doors-${side}`,side>0?'右跑车门与进气口':'左跑车门与进气口',[0,0,0],g=>{
-  profile(g,[[-.72,.58],[.85,.59],[.88,.97],[-.66,1.01],[-.99,.86]],.035,paint,side*.99,.025);
-  // Recess-shaped intake and raised sculpted surround ahead of the rear wheel.
-  pane(g,[[-1.12,.69],[-.9,1.06],[-.35,.97],[-.7,.72]],side*1.09,M.black);
-  bar(g,[-1.1,.7,side*1.1],[-.88,1.065,side*1.1],.025,paint);
-  bar(g,[-.88,1.065,side*1.1],[-.35,.975,side*1.1],.022,paint);
-  for(let k=0;k<3;k++)bar(g,[-1+.08*k,.77,side*1.1],[-.85+.09*k,.98,side*1.1],.012,M.dark);
-  box(g,-.51,.97,side*1.06,.18,.028,.025,M.dark,.008);
-  bar(g,[.64,1.07,side*.86],[.61,1.16,side*1.11],.022,M.dark);box(g,.63,1.18,side*1.15,.24,.1,.15,paint,.04);box(g,.5,1.18,side*1.15,.013,.065,.11,M.chrome,.01);
- });
- part(ctx,'interior','赛车座椅与方向盘',[-.12,.66,0],g=>{interior(g,1.55,1.34);for(let side of [-1,1]){bar(g,[-.4,.24,side*.35],[-.4,.64,side*.35],.03,M.red);}});
- part(ctx,'front','刀锋大灯与前进气口',[0,0,0],g=>{
-  box(g,2.35,.585,0,.07,.1,1.12,M.black,.04);
-  for(let side of [-1,1]){
-   const housing=box(g,1.83,.895,side*.79,.59,.055,.18,M.black,.055);housing.rotation.z=-.31;housing.rotation.y=side*.2;
-   const blade=box(g,1.83,.929,side*.79,.52,.018,.045,M.lamp,.014);blade.rotation.z=-.31;blade.rotation.y=side*.2;
-   for(let k=0;k<3;k++){const led=box(g,1.63+k*.1,.98-k*.03,side*(.79-k*.015),.045,.02,.1,M.lamp,.01);led.rotation.z=-.3;}
-   box(g,2.23,.61,side*.63,.08,.13,.3,M.black,.035);
-  }
- });
- part(ctx,'rear','圆形尾灯与双排气',[0,0,0],g=>{box(g,-2.34,.79,0,.04,.2,1.48,M.black,.025);for(let side of [-1,1]){for(let z of [.5,.73]){cylinder(g,-2.38,.89,side*z,.09,.04,M.tail,'x');cylinder(g,-2.405,.89,side*z,.044,.014,M.black,'x');}cylinder(g,-2.39,.59,side*.48,.09,.17,M.chrome,'x');cylinder(g,-2.48,.59,side*.48,.064,.01,M.black,'x');}});
- part(ctx,'engine-deck','中置发动机与散热盖',[0,0,0],g=>{
-  coachwork(g,[[-2.21,.74,.96,1.02],[-1.8,.81,1.01,1.08],[-1.19,.81,1.03,1.09]],paint);
-  box(g,-1.68,1.1,0,.72,.018,.93,M.black,.045);
-  for(let x=-1.98;x< -1.2;x+=.12)box(g,x,1.125,0,.055,.035,.89,M.dark,.012);
-  for(let side of [-1,1])profile(g,[[-1.95,1.08],[-1.15,1.08],[-.74,1.44],[-.96,1.42]],.13,paint,side*.72,.03);
- });
- part(ctx,'spoiler','低位空气动力尾翼',[-2.17,1.18,0],g=>{for(let side of [-1,1])box(g,0,-.06,side*.59,.08,.15,.045,M.dark,.01);box(g,0,.04,0,.29,.065,1.88,paint,.03);});
- part(ctx,'diffuser','赛车底部扩散器',[0,0,0],g=>{box(g,2.19,.505,0,.43,.045,1.84,M.dark,.025);box(g,-2.2,.48,0,.4,.06,1.77,M.dark,.025);for(let z=-.72;z<=.72;z+=.24)box(g,-2.2,.45,z,.47,.15,.025,M.dark,.006);for(let side of [-1,1])box(g,0,.47,side*1.03,2.1,.06,.16,M.dark,.02);});
+ for(const s of [-1,1])part(ctx,`doors-${s}`,s>0?'右侧小车门':'左侧小车门',g=>{const doorL=pickup?1.55:compact?1.65:2.2;box(g,(front+rear)*.5,ferrari?.77:1.03,s*(W/2+.005),doorL,ferrari?.22:.32,.055,ctx.paint,.08);box(g,-.3,ferrari?.91:1.17,s*(W/2+.08),.23,.065,.045,ctx.accent,.025);if(id==='police'){box(g,-.3,1.03,s*(W/2+.08),1.75,.42,.03,ctx.accent,.05);textLabel(g,'110',-.3,1.04,s*(W/2+.108),.29,M.white,s);}if(id==='taxi'){for(let i=0;i<9;i++)box(g,-.85+i*.19,1.02,s*(W/2+.08),.09,.085,.025,M.dark,0);}if(ferrari){profile(g,[[-1.08,.7],[-.83,.99],[-.36,.92],[-.67,.7]],.035,M.dark,s*(W/2+.04),.025);}if(suv)box(g,-.3,.67,s*(W/2+.1),2.5,.14,.22,ctx.accent,.06);});
+ part(ctx,'mirrors','圆圆后视镜',g=>mirrors(g,front-.02,belt+.25,W,ctx.paint));
+ part(ctx,'interior','座椅与方向盘',g=>{for(const z of [-.4,.4])seat(g,-.15,ferrari?.65:.93,z);const steering=ring(g,.5,ferrari?1.05:1.25,-.4,.17,.035,M.dark);steering.rotation.y=PI/2;box(g,.65,1.1,0,.25,.16,1.3,M.dark,.06);});
+ face(ctx,L,ferrari?1.72:W,ferrari?.64:1.04,G||compact);
+ if(G)part(ctx,'spare','背上的小备胎',g=>{const p=new THREE.Group();wheel(p,0,0,0,.43,.25,ctx.paint);p.rotation.y=PI/2;p.position.set(-L/2-.22,1.45,0);g.add(p);});
+ else if(sport)part(ctx,'spoiler','飞翼赛车尾翼',g=>{for(const s of [-1,1])box(g,-1.72,ferrari?1.1:1.32,s*.6,.13,ferrari?.23:.4,.1,M.dark,.045);box(g,-1.72,ferrari?1.25:1.55,0,.42,.13,2.02,ctx.accent,.065);});
+ else if(id==='police')part(ctx,'lightbar','红蓝巡逻警灯',g=>beacon(g,-.55,roof+.16,1.2));
+ else if(id==='taxi')part(ctx,'sign','TAXI出租车顶灯',g=>{box(g,-.5,roof+.28,0,1,.35,.42,M.lamp,.12);for(const s of [-1,1])textLabel(g,'TAXI',-.5,roof+.28,s*.225,.22,M.dark,s);});
+ else if(pickup)part(ctx,'bed','开放式皮卡货斗',g=>{box(g,-1.58,1.27,0,1.32,.12,1.73,M.dark,.05);for(const s of [-1,1])box(g,-1.6,1.5,s*.8,1.35,.43,.16,ctx.paint,.08);box(g,-2.19,1.5,0,.14,.43,1.65,ctx.paint,.07);box(g,-1.65,1.39,0,.67,.23,.7,ctx.accent,.08);});
+ else if(suv)part(ctx,'roofrack','探险行李与车顶架',g=>{for(const x of [-1.2,-.3])box(g,x,roof+.15,0,.1,.1,1.62,M.dark,.03);box(g,-.8,roof+.4,0,1.25,.42,1.1,ctx.accent,.16);for(const z of [-.3,.3])box(g,-.8,roof+.62,z,1.03,.035,.07,M.white,.012);});
+ else part(ctx,'tailgate','小尾门',g=>{if(compact){box(g,-1.51,1.32,0,.14,.3,1.32,ctx.paint,.07);box(g,-1.6,1.37,0,.035,.07,.3,ctx.accent,.025);}else box(g,-1.65,1.18,0,.61,.17,1.4,ctx.paint,.08);});
+}
+
+function van(ctx,cfg){const id=cfg.id,ambulance=id==='ambulance',bus=['bus','schoolbus','minibus'].includes(id),school=id==='schoolbus',camper=id==='camper',ice=id==='icecream',long=id==='bus'||school,L=long?5.6:4.65,W=1.94,H=long?2.65:2.5,front=L/2,R=.51;
+ chassis(ctx,L,W,R);wheels(ctx,[-L*.32,L*.32],W,R);
+ part(ctx,'body','面包形车身',g=>{box(g,0,1.07,0,L,.85,W,ctx.paint,.25);if(ambulance){box(g,-.75,1.78,0,3.05,1.15,W*.98,ctx.paint,.3);profile(g,[[.65,1.26],[2.2,1.26],[1.94,2.21],[1.56,2.34],[.65,2.34]],W*.93,ctx.paint,0,.12);box(g,2.05,1.46,0,.65,.32,W*.95,ctx.paint,.15);}else box(g,-.15,1.72,0,L-.32,.95,W*.98,ctx.paint,.22);for(const s of [-1,1])box(g,0,1.1,s*(W/2+.025),L*.9,.25,.04,ctx.accent,.025);});
+ part(ctx,'roof','圆润高车顶',g=>{if(ambulance){box(g,-.73,H+.01,0,3.22,.43,W+.035,ctx.paint,.2);box(g,1.18,2.37,0,1.37,.2,W*.96,ctx.paint,.09);}else box(g,-.12,H-.03,0,L-.22,.35,W+.035,camper||ice?ctx.accent:ctx.paint,.16);});
+ part(ctx,'windshield','宽宽前挡风玻璃',g=>{if(ambulance){const windshield=box(g,2.15,1.97,0,.075,.67,1.52,M.glass,.13);windshield.rotation.z=.36;}else box(g,front-.05,2.03,0,.075,.7,1.56,M.glass,.15);for(const s of [-1,1]){const glint=box(g,ambulance?2.1:front,ambulance?2.16:2.2,s*.43,.018,.04,.35,M.shine,.012);glint.rotation.x=s*.4;}box(g,ambulance?2.25:front+.01,1.78,0,.025,.04,1.05,M.dark,.015);});
+ for(const s of [-1,1])part(ctx,`doors-${s}`,s>0?'右驾驶室门':'左驾驶室门',g=>{box(g,front-.65,1.37,s*(W/2+.025),1.05,.55,.08,ctx.paint,.08);if(ambulance)profile(g,[[1,1.72],[1.97,1.72],[1.79,2.21],[1,2.25]],.035,M.glass,s*(W/2+.025),.045);else box(g,front-.65,2.05,s*(W/2+.025),.94,.66,.045,M.glass,.12);box(g,front-.92,1.52,s*(W/2+.08),.21,.065,.035,M.white,.025);});
+ part(ctx,'windows','车厢窗户',g=>{for(const s of [-1,1]){if(bus){const count=long?4:3;for(let i=0;i<count;i++)box(g,-L/2+.58+i*.83,2.05,s*(W/2+.02),.66,.68,.05,M.glass,.13);}else if(ambulance){box(g,-1.3,2.04,s*(W/2+.02),.72,.57,.05,M.glass,.1);}else if(camper||ice){box(g,-.55,2.03,s*(W/2+.02),1.55,.64,.05,M.glass,.12);box(g,-.55,2.03,s*(W/2+.07),.045,.57,.025,M.white,.012);}else box(g,-1.14,2.02,s*(W/2+.02),1.2,.53,.04,ctx.accent,.12);}});
+ part(ctx,'livery','车厢彩色装饰',g=>{for(const s of [-1,1]){if(ambulance){textLabel(g,'120',-.1,1.65,s*(W/2+.065),.39,ctx.accent,s);badge(g,-1.3,1.6,s*(W/2+.07),ctx.accent,s);}else if(school){box(g,-.6,1.48,s*(W/2+.065),2.9,.09,.025,M.dark,.03);box(g,-.6,1.32,s*(W/2+.065),2.9,.09,.025,M.dark,.03);}else if(camper){bar(g,[-1.7,1.38,s*(W/2+.06)],[-.4,1.7,s*(W/2+.06)],.07,ctx.accent);bar(g,[-.4,1.7,s*(W/2+.06)],[.3,1.38,s*(W/2+.06)],.07,ctx.accent);}else if(ice){for(let i=0;i<5;i++)cyl(g,-1.35+i*.35,1.42,s*(W/2+.065),.09,.03,i%2?ctx.accent:M.white);}else{box(g,-.8,1.5,s*(W/2+.06),1.65,.13,.025,ctx.accent,.04);}}});
+ part(ctx,'mirrors','大耳朵后视镜',g=>mirrors(g,front-.3,1.9,W,ctx.paint));
+ part(ctx,'rear-door','后车门',g=>{box(g,-front-.055,1.8,0,.05,1.38,1.65,ctx.paint,.12);for(const s of [-1,1]){box(g,-front-.09,2.03,s*.43,.028,.56,.65,M.glass,.08);box(g,-front-.1,1.58,s*.1,.03,.18,.06,M.chrome,.02);}if(ambulance){const h=new THREE.Group();textLabel(h,'120',0,0,0,.26,ctx.accent);h.rotation.y=-PI/2;h.position.set(-front-.1,1.23,0);g.add(h);}});
+ face(ctx,L,W,1.12,false);
+ if(ambulance)part(ctx,'lightbar','急救红蓝警灯',g=>beacon(g,.17,H+.28,1.3));
+ else if(bus)part(ctx,'destination','巴士车顶标牌',g=>{box(g,front-.02,H-.18,0,.08,.22,1.26,M.dark,.07);box(g,front+.03,H-.18,0,.025,.09,.74,ctx.accent,.025);if(school)for(const s of [-1,1])cyl(g,front+.03,H-.17,s*.77,.07,.035,M.red,'x');});
+ else if(camper)part(ctx,'luggage','露营行李与天窗',g=>{box(g,-1.15,H+.24,0,1.2,.4,1.24,ctx.accent,.15);box(g,.57,H+.15,0,.9,.12,1.1,M.glass,.06);for(const z of [-.3,.3])box(g,-1.15,H+.45,z,.9,.03,.07,M.white,.01);});
+ else if(ice)part(ctx,'icecream','车顶大甜筒',g=>{cyl(g,-.45,H+.32,0,.08,.58,M.seat,'y',.28);ball(g,-.45,H+.74,0,.38,.36,.38,M.white);ball(g,-.47,H+.94,0,.28,.25,.28,ctx.paint);});
+ else part(ctx,'cargo','车顶快递礼物',g=>{box(g,-.5,H+.25,0,.95,.43,1.02,ctx.accent,.1);box(g,-.5,H+.48,0,.12,.03,.86,M.white,.01);box(g,-.5,H+.48,0,.8,.03,.12,M.white,.01);});
+ if(ice)part(ctx,'awning','条纹售卖小遮阳棚',g=>{for(let i=0;i<6;i++){const aw=box(g,-1.18+i*.25,2.35,1.14,.25,.1,.55,i%2?M.white:ctx.accent,.035);aw.rotation.x=.15;}});
+}
+
+function commercial(ctx,cfg){const id=cfg.id,L=5.7,W=2.02,R=.54,fire=id==='fire',crane=id==='crane',mixer=id==='mixer',garbage=id==='garbage';chassis(ctx,L,W,R);wheels(ctx,[-1.95,-.86,1.85],W,R);
+ part(ctx,'cab','圆头驾驶室',g=>{box(g,1.83,1.46,0,1.95,1.65,W,ctx.paint,.25);box(g,2.15,1.16,0,1.45,.67,W+.04,ctx.paint,.2);});
+ part(ctx,'windshield','大卡车前窗',g=>{box(g,2.81,2.06,0,.075,.71,1.6,M.glass,.13);box(g,2.86,2.18,-.36,.025,.06,.51,M.shine,.02);});
+ for(const s of [-1,1])part(ctx,`doors-${s}`,s>0?'右驾驶室门':'左驾驶室门',g=>{box(g,1.81,1.49,s*1.035,1.46,.63,.08,ctx.paint,.1);box(g,1.8,2.08,s*1.035,1.4,.62,.05,M.glass,.1);box(g,1.35,1.59,s*1.09,.23,.075,.035,M.white,.02);box(g,1.78,.8,s*1.07,1.46,.15,.23,ctx.accent,.06);});
+ part(ctx,'cab-roof','圆顶驾驶室顶棚',g=>{box(g,1.8,2.6,0,2.12,.32,2.1,ctx.paint,.15);if(fire)beacon(g,1.8,2.84,1.35);else for(const s of [-1,1])box(g,2.64,2.75,s*.72,.14,.12,.19,M.amber,.045);});
+ part(ctx,'mirrors','大卡车后视镜',g=>mirrors(g,2.45,1.96,W,ctx.paint));face(ctx,L,W,1.28);
+ part(ctx,'deck','后部载货底座',g=>{box(g,-1.03,.94,0,3.6,.25,2.07,ctx.accent,.12);for(const s of [-1,1])box(g,-1.25,.78,s*.99,3.1,.23,.3,ctx.paint,.1);});
+ if(fire){part(ctx,'equipment','消防器材舱',g=>{box(g,-1.07,1.74,0,3.25,1.34,2.04,ctx.paint,.2);for(const s of [-1,1])for(const x of [-2.07,-1.05,-.03]){box(g,x,1.73,s*1.04,.85,.97,.055,M.chrome,.075);for(let j=0;j<4;j++)box(g,x,1.48+j*.14,s*1.075,.7,.035,.025,M.white,.01);box(g,x,1.42,s*1.1,.27,.065,.04,M.dark,.02);}});part(ctx,'ladder','长长消防云梯',g=>{for(const s of [-1,1])box(g,-.85,2.61,s*.43,4.03,.13,.12,M.chrome,.045);for(let x=-2.68;x<1.2;x+=.34)box(g,x,2.62,0,.1,.11,.85,M.white,.035);for(const x of [-1.7,.2])box(g,x,2.49,0,.25,.23,1.14,ctx.accent,.07);});part(ctx,'hose','消防水管卷盘',g=>{cyl(g,-2.83,1.88,0,.43,.18,M.dark,'x');for(const r of [.17,.28,.39]){const t=ring(g,-2.96,1.88,0,r,.04,ctx.accent);t.rotation.y=PI/2;}});
+ }else if(crane){part(ctx,'turret','吊车回转底盘',g=>{cyl(g,-1.1,1.25,0,.7,.35,M.dark,'y');box(g,-1.4,1.61,0,1.5,.55,1.6,ctx.paint,.16);});part(ctx,'boom','可伸缩大吊臂',g=>{const a=box(g,-.15,2.28,0,3.4,.43,.49,ctx.paint,.12);a.rotation.z=.32;const b=box(g,1.55,2.85,0,1.25,.26,.3,ctx.accent,.09);b.rotation.z=.32;bar(g,[-1.1,1.7,.4],[.8,2.47,.4],.08,M.chrome);});part(ctx,'hook','圆圆吊钩和钢索',g=>{bar(g,[2.1,3.03,0],[2.1,1.9,0],.024,M.dark);box(g,2.1,1.9,0,.25,.24,.25,ctx.accent,.08);ring(g,2.14,1.66,0,.15,.055,M.dark,PI*1.65).rotation.z=.5;});part(ctx,'outriggers','伸展稳定支腿',g=>{for(const x of [-2.1,.15])for(const s of [-1,1]){box(g,x,.7,s*1.06,.25,.23,1.05,ctx.accent,.07);cyl(g,x,.42,s*1.46,.08,.48,M.chrome,'y');box(g,x,.16,s*1.46,.45,.13,.4,M.dark,.06);}});
+ }else if(mixer){part(ctx,'cradle','搅拌罐支架',g=>{for(const x of [-2.1,.05]){box(g,x,1.44,0,.25,.75,1.36,M.dark,.08);bar(g,[x,1.4,-.6],[x,2.08,0],.1,ctx.accent);bar(g,[x,1.4,.6],[x,2.08,0],.1,ctx.accent);}});part(ctx,'drum','圆滚滚搅拌罐',g=>{const h=new THREE.Group();cyl(h,0,0,0,.92,1.85,ctx.accent,'x',.61,20);ball(h,-.88,0,0,.45,.9,.9,ctx.accent);for(const x of [-.55,.14,.64]){const t=ring(h,x,0,0,.87-(x+.55)*.15,.075,ctx.paint);t.rotation.y=PI/2;}h.position.set(-1.08,2.1,0);h.rotation.z=.13;g.add(h);});part(ctx,'chute','水泥倾倒滑槽',g=>{box(g,-2.73,1.74,0,.3,.65,.84,ctx.paint,.1);const chute=box(g,-3.04,1.32,0,.95,.14,.62,ctx.accent,.06);chute.rotation.z=.28;for(const s of [-1,1]){const edge=box(g,-3.04,1.44,s*.31,.97,.16,.09,ctx.paint,.04);edge.rotation.z=.28;}});
+ }else if(garbage){part(ctx,'container','大肚子清洁车厢',g=>{box(g,-.98,1.99,0,3.18,1.84,2.03,ctx.paint,.3);for(const s of [-1,1]){box(g,-1,2.05,s*1.03,2.65,.2,.04,ctx.accent,.04);for(const x of [-1.75,-.97,-.2])bar(g,[x,1.49,s*1.05],[x,2.48,s*1.05],.04,ctx.accent);}});part(ctx,'hopper','垃圾装载翻斗',g=>{box(g,-2.83,1.55,0,.4,1.1,1.74,ctx.accent,.14);box(g,-3.03,1.64,0,.08,.58,1.25,M.dark,.1);box(g,-3.15,1.15,0,.6,.14,1.7,ctx.paint,.08);});part(ctx,'bin','迷你分类垃圾桶',g=>{box(g,-2.97,1.02,0,.56,.76,.55,ctx.paint,.1);box(g,-2.97,1.43,0,.65,.1,.63,ctx.accent,.04);});
+ }else{part(ctx,'sleeper','软软长途休息舱',g=>{box(g,.1,1.91,0,1.2,1.87,1.97,ctx.paint,.23);for(const s of [-1,1])box(g,.1,2.23,s*.99,.65,.48,.04,M.glass,.1);box(g,.1,2.86,0,1.19,.18,1.85,ctx.accent,.08);});part(ctx,'coupling','牵引连接转盘',g=>{cyl(g,-1.65,1.18,0,.65,.18,M.dark,'y');box(g,-1.65,1.29,0,1.1,.08,.16,M.chrome,.03);});part(ctx,'exhaust','双排气管',g=>{for(const s of [-1,1]){cyl(g,-.55,1.93,s*.92,.085,1.72,M.chrome,'y');cyl(g,-.55,2.81,s*.92,.11,.07,M.dark,'y');}});}
+}
+
+function tractor(ctx){const W=1.75;chassis(ctx,3.6,W,.48);for(const s of [-1,1]){part(ctx,`wheel-rear-${s}`,`${s>0?'右':'左'}大后轮`,g=>wheel(g,-.98,.75,s*.96,.72,.42,ctx.accent));part(ctx,`wheel-front-${s}`,`${s>0?'右':'左'}小前轮`,g=>wheel(g,1.2,.46,s*.79,.43,.3,ctx.accent));}
+ part(ctx,'engine','圆鼓鼓拖拉机头',g=>{box(g,.77,1.08,0,2.03,.85,1.15,ctx.paint,.24);box(g,1.79,1.08,0,.08,.58,.85,M.dark,.1);for(const z of [-.27,0,.27])box(g,1.84,1.08,z,.025,.43,.055,M.chrome,.015);});
+ part(ctx,'seat','农场小座椅',g=>seat(g,-.73,1.2,0));part(ctx,'controls','大方向盘',g=>{bar(g,[-.12,.99,0],[-.3,1.68,0],.045,M.dark);const t=ring(g,-.3,1.68,0,.22,.04,M.dark);t.rotation.y=PI/2;});
+ part(ctx,'roof','农场遮阳车顶',g=>{for(const s of [-1,1])bar(g,[-1.32,1.12,s*.48],[-1.32,2.35,s*.48],.05,M.dark);box(g,-.86,2.39,0,1.85,.21,1.7,ctx.accent,.1);});
+ for(const s of [-1,1])part(ctx,`fender-${s}`,`${s>0?'右':'左'}弧形挡泥板`,g=>{box(g,-1.02,1.53,s*.82,1.65,.19,.54,ctx.paint,.09);box(g,-.27,.85,s*.72,.55,.16,.4,ctx.accent,.06);});
+ part(ctx,'exhaust','农场烟囱',g=>{cyl(g,.57,1.98,.35,.07,1.1,M.dark,'y');cyl(g,.57,2.55,.35,.11,.09,M.chrome,'y');});
+ part(ctx,'lights','圆圆拖拉机灯',g=>{for(const s of [-1,1])cyl(g,1.79,1.51,s*.43,.14,.12,M.lamp,'x');box(g,1.87,.72,0,.28,.18,1.4,ctx.accent,.08);});
+ part(ctx,'hitch','农场拖钩',g=>{box(g,-1.77,.64,0,.65,.16,.35,M.dark,.06);ring(g,-2.07,.65,0,.15,.04,M.chrome).rotation.x=PI/2;});
+}
+function excavator(ctx){fixed(ctx,g=>{box(g,-.55,.47,0,2.7,.38,1.5,M.dark,.13);cyl(g,-.55,.84,0,.63,.35,M.chrome,'y');});
+ for(const s of [-1,1])part(ctx,`track-${s}`,`${s>0?'右':'左'}软胶履带`,g=>{box(g,-.6,.43,s*.99,3.35,.77,.52,M.rubber,.19);for(let x=-1.78;x<.85;x+=.51)cyl(g,x,.43,s*1.28,.25,.065,M.chrome);for(let i=0;i<14;i++)for(const y of [.08,.79])box(g,-2.03+i*.22,y,s*.99,.13,.075,.57,M.dark,.018);});
+ part(ctx,'platform','回转大平台',g=>{box(g,-.55,1.07,0,2.93,.26,2.06,ctx.paint,.12);cyl(g,.46,1.24,.48,.2,.64,M.chrome);});
+ part(ctx,'engine','圆润配重尾巴',g=>{box(g,-1.37,1.62,.12,1.62,1.03,1.86,ctx.paint,.28);for(const s of [-1,1])for(let i=0;i<4;i++)box(g,-1.7+i*.23,1.7,s*1.07,.09,.31,.03,M.dark,.025);});
+ part(ctx,'cab','蓝色泡泡驾驶舱',g=>{box(g,-.22,1.99,-.52,1.3,1.6,1.1,M.glass,.2);for(const z of [-1.07,.03])bar(g,[.38,1.34,z],[.29,2.68,z],.05,ctx.paint);});
+ part(ctx,'roof','圆圆驾驶舱车顶',g=>box(g,-.25,2.82,-.52,1.5,.23,1.3,ctx.paint,.11));
+ part(ctx,'door','驾驶舱小门',g=>{box(g,-.27,1.4,-1.1,1.1,.3,.07,ctx.paint,.08);box(g,-.65,1.75,-1.12,.18,.065,.04,M.white,.025);bar(g,[-.87,1.4,-1.12],[-.87,2.69,-1.12],.04,ctx.paint);});
+ part(ctx,'seat','驾驶员小座椅',g=>{seat(g,-.27,1.4,-.5);for(const s of [-1,1])bar(g,[0,1.4,-.5+s*.35],[.05,1.86,-.5+s*.35],.035,M.dark);});
+ part(ctx,'boom','弯弯挖掘主臂',g=>{profile(g,[[.27,1.22],[.62,1.22],[1.51,2.84],[2,2.94],[1.99,3.25],[1.28,3.24]],.4,ctx.paint,.5,.1);for(const [x,y] of [[.42,1.44],[1.43,3.02],[1.98,3.09]])cyl(g,x,y,.5,.14,.65,ctx.accent);});
+ part(ctx,'dipper','向下挖掘小臂',g=>{profile(g,[[1.85,3.14],[2.15,3.16],[2.9,1.5],[2.59,1.36]],.34,ctx.paint,.5,.08);cyl(g,2.74,1.48,.5,.14,.58,ctx.accent);});
+ part(ctx,'bucket','大大的挖斗',g=>{profile(g,[[2.57,1.47],[2.91,1.43],[3.34,.73],[2.64,.71],[2.32,1.02]],.9,ctx.accent,.5,.1);for(const z of [.17,.5,.83])box(g,3.34,.76,z,.32,.12,.17,M.chrome,.04);});
+ part(ctx,'hydraulics','闪亮液压杆',g=>{bar(g,[.52,1.47,.12],[1.4,2.96,.12],.07,M.chrome);bar(g,[.52,1.47,.12],[.96,2.22,.12],.12,ctx.accent);bar(g,[2.1,2.94,.16],[2.67,1.64,.16],.065,M.chrome);});
+ part(ctx,'lights','作业灯与警示灯',g=>{box(g,.38,2.79,-.5,.13,.16,.63,M.lamp,.06);cyl(g,-.72,3.04,-.48,.12,.23,M.amber,'y');});
+ part(ctx,'exhaust','小烟囱',g=>{cyl(g,-1.44,2.32,.63,.07,.58,M.dark,'y');cyl(g,-1.44,2.64,.63,.1,.1,M.chrome,'y');});
+}
+
+export function buildVehicle(id='gclass',liveryId='default'){
+ M=materials();const cfg=VEHICLES.find(v=>v.id===id)||VEHICLES[0],livery=cfg.liveries.find(l=>l.id===liveryId)||cfg.liveries[0];
+ const ctx={group:new THREE.Group(),parts:[],paint:material(livery.color,.3,.18),accent:material(livery.accent||'#fff3bd',.36)};
+ ctx.group.name=cfg.name;ctx.group.userData={vehicleId:cfg.id,liveryId:livery.id,labels:cfg.id==='police'?['110']:cfg.id==='ambulance'?['120']:cfg.id==='taxi'?['TAXI']:[]};
+ if(cfg.id==='excavator')excavator(ctx);else if(cfg.id==='tractor')tractor(ctx);else if(['truck','fire','crane','garbage','mixer'].includes(cfg.id))commercial(ctx,cfg);else if(['ambulance','bus','schoolbus','minibus','van','camper','icecream'].includes(cfg.id))van(ctx,cfg);else car(ctx,cfg);
+ ctx.group.updateMatrixWorld(true);const size=new THREE.Box3().setFromObject(ctx.group).getSize(new THREE.Vector3());
+ return {group:ctx.group,parts:ctx.parts,dimensions:{length:size.x,width:size.z,height:size.y},animate(time,drive=false){if(!drive)return;for(const p of ctx.parts)if(p.id.startsWith('wheel-'))p.group.rotation.z=-time*3;}};
 }
