@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
+import {applySurface,artTexture,projectMaterialUV} from './materials.js?v=6';
 
 /** An original, batched miniature workshop. World units are metres; Y is up. */
 export function buildGarage(scene) {
@@ -7,10 +8,11 @@ export function buildGarage(scene) {
   const mat = (color, roughness=.65, metalness=0) => {
     const m = new THREE.MeshStandardMaterial({color, roughness, metalness}); resources.push(m); return m;
   };
-  const concrete=mat('#72a7b7', .94), seam=mat('#527e90'), navy=mat('#173e60',.46,.3), teal=mat('#008daf',.42,.25);
+  const concrete=mat('#eef4ed', .94), seam=mat('#527e90'), navy=mat('#173e60',.46,.3), teal=mat('#008daf',.42,.25);
   const cream=mat('#e5dbc1'), yellow=mat('#ffbf13',.46), black=mat('#273239'), metal=mat('#aebcc0',.32,.7);
   const rubber=mat('#253033',.92), red=mat('#ed4d30',.42), wood=mat('#f2bd68'), white=mat('#fffdf0'), blue=mat('#168ed5');
   const glow=new THREE.MeshStandardMaterial({color:'#fff5d6',emissive:'#fff1bf',emissiveIntensity:1.3,roughness:.3}); resources.push(glow);
+  applySurface(concrete,'concrete',{bump:.035});applySurface(cream,'plaster',{bump:.018});applySurface(wood,'wood',{bump:.02});applySurface(metal,'metal',{bump:.005});applySurface(rubber,'rubber',{bump:.02});
   const backWall=cream.clone(), backTrim=teal.clone(); resources.push(backWall,backTrim);
   const glass=new THREE.MeshStandardMaterial({color:'#9fced3',roughness:.25,metalness:.08,transparent:true,opacity:.45}); resources.push(glass);
   function put(g,m,x,y,z,rx=0,ry=0,rz=0) {
@@ -42,7 +44,7 @@ export function buildGarage(scene) {
   box(concrete,0,-.13,0,27,.25,25);
   for(let x=-12;x<=12;x+=3)box(seam,x,.001,0,.018,.007,24);
   for(let z=-12;z<=12;z+=3)box(seam,0,.002,z,26,.007,.018);
-  const bay=mat('#40899f',.9);roundBox(bay,0,.004,0,9.4,.009,6.5);
+  const bay=applySurface(mat('#b6dcda',.9),'concrete',{bump:.025});roundBox(bay,0,.004,0,9.4,.009,6.5);
   // Paint corner marks and short, alternating hazard bars.
   for(const s of [-1,1]) {
     box(yellow,0,.015,s*3.35,9.8,.014,.09);
@@ -69,7 +71,12 @@ export function buildGarage(scene) {
     for(let dx=-2.4;dx<=2.4;dx+=1.6)box(cream,x+dx,3.25,-10.88,.07,2.03,.06);
     box(white,x,2.12,-10.84,6.9,.12,.38);
   }
-  sign('小小车库',0,3.8,-11.11,5,1.05);sign('拼一拼 · 开一开 · 再来一辆',0,2.92,-11.1,5,.35,'#e5dbc1','#008daf');
+  // Illustrated mountain mural is original raster artwork, not geometric scenery.
+  box(wood,0,3.28,-10.99,8.9,3.1,.16);
+  const muralGeo=new THREE.PlaneGeometry(8.6,2.87),muralMat=new THREE.MeshStandardMaterial({map:artTexture('mural'),roughness:.86,color:'#fffef4'});
+  const mural=new THREE.Mesh(muralGeo,muralMat);mural.name='Original alpine gouache mural';mural.position.set(0,3.28,-10.89);root.add(mural);resources.push(muralGeo,muralMat);
+  sign('LITTLE GARAGE',0,1.54,-10.87,5.4,.42,'#173e60','#fff1cb');
+  sign('拼一拼 · 开一开 · 再来一辆',0,1.07,-10.87,5.4,.32,'#e5dbc1','#008daf');
   // High steel roof trusses fade above the player so they never obscure assembly.
   const roofMats = [navy.clone(),teal.clone(),metal.clone(),glow.clone()];resources.push(...roofMats);
   const [roofNavy,roofTeal,roofMetal,roofGlow]=roofMats;
@@ -87,7 +94,7 @@ export function buildGarage(scene) {
   }
   // Tool cabinets with recessed drawers, small handles and castors.
   function cabinet(x,z,w=2.1) {
-    roundBox(teal,x,.77,z,w,1.32,.9);roundBox(blue,x,.82,z+.46,w-.12,1.13,.035);roundBox(yellow,x,1.48,z,w+.1,.13,1.03);
+    roundBox(teal,x,.77,z,w,1.32,.9);roundBox(blue,x,.82,z+.46,w-.12,1.13,.035);roundBox(wood,x,1.48,z,w+.1,.13,1.03);
     for(let y=.37;y<1.4;y+=.25) {box(navy,x,y,z+.489,w-.2,.022,.02);box(metal,x,y+.1,z+.52,.55,.035,.06);}
     for(const dx of [-w*.38,w*.38])for(const dz of [-.29,.29])cyl(rubber,x+dx,.12,z+dz,.115,.09,0,Math.PI/2);
   }
@@ -131,7 +138,7 @@ export function buildGarage(scene) {
       if(g!==original)resources.push(g); resources.push(original);
     }
     const concat=arrays=>{const arr=new Float32Array(arrays.reduce((n,a)=>n+a.length,0));let offset=0;for(const a of arrays){arr.set(a,offset);offset+=a.length;}return arr;};
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(concat(positions),3));g.setAttribute('normal',new THREE.BufferAttribute(concat(normals),3));g.setAttribute('uv',new THREE.BufferAttribute(concat(uvs),2));g.computeBoundingSphere();
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(concat(positions),3));g.setAttribute('normal',new THREE.BufferAttribute(concat(normals),3));g.setAttribute('uv',new THREE.BufferAttribute(concat(uvs),2));g.computeBoundingSphere();if(material.map)projectMaterialUV(g,.42);
     const mesh=new THREE.Mesh(g,material);if(material===backWall||material===backTrim){mesh.userData.fadeWall=true;mesh.userData.wallNormal=new THREE.Vector3(0,0,1);}
     mesh.castShadow=material!==glass&&material!==glow;mesh.receiveShadow=true;root.add(mesh);resources.push(g);
   }

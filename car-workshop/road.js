@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
-import { TRACK } from './driving-state.js';
+import { TRACK } from './driving-state.js?v=6';
 
 // An original low-poly park circuit. Static pieces merge by material to keep
 // draw calls low in WebGL and the software renderer; no textures or downloads.

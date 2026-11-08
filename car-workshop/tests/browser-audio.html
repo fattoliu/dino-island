@@ -39,7 +39,7 @@ const spectralPeak=data=>{
   return bestHz;
 };
 try {
-  const {WorkshopAudio}=await import('../audio.js?v=5');
+  const {WorkshopAudio}=await import('../audio.js?v=6');
   if(!globalThis.OfflineAudioContext) throw new Error('OfflineAudioContext is unavailable in this browser.');
   async function render(id,{isolate='siren',seconds=3.5,change=null}={}) {
     const context=new OfflineAudioContext(1,Math.ceil(seconds*report.sampleRate),report.sampleRate);
@@ -92,6 +92,12 @@ try {
     const before=measure(data,.1,.2),after=measure(data,.65,1.4);report.silence[name]={before,after};
     check(`${name} silences already-active output`,before.rms>.001&&after.finite&&after.peak<.000001,`Before RMS ${before.rms.toFixed(5)}; after peak ${after.peak.toExponential(2)}.`);
   }
+  const celebrationContext=new OfflineAudioContext(1,report.sampleRate*3,report.sampleRate);
+  const celebrationAudio=new WorkshopAudio({AudioContext:function(){return celebrationContext;}});
+  celebrationAudio.unlock();clearInterval(celebrationAudio._timer);celebrationAudio._timer=null;celebrationAudio._stopTag('music');celebrationAudio.cheer();
+  const celebrationData=(await celebrationContext.startRendering()).getChannelData(0),celebrationSignal=measure(celebrationData,0,2.4),celebrationTail=measure(celebrationData,2.7,2.99);report.celebration={signal:celebrationSignal,tail:celebrationTail};
+  check('Layered fanfare and applause render without clipping',celebrationSignal.finite&&celebrationSignal.rms>.002&&celebrationSignal.peak<1,JSON.stringify(celebrationSignal));
+  check('Celebration ends with silence',celebrationTail.finite&&celebrationTail.peak<.000001,JSON.stringify(celebrationTail));celebrationAudio.dispose();
   const failures=report.checks.filter(c=>!c.pass);
   status.textContent=`${failures.length?'FAIL':'PASS'}: ${report.checks.length-failures.length}/${report.checks.length} signal checks passed.`;
   status.className=failures.length?'fail':'pass';document.title=`${failures.length?'FAIL':'PASS'} — Vehicle audio signal QA`;

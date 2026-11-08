@@ -9,7 +9,7 @@ test('22 distinct original vehicle templates with contextual livery options',()=
  for(const v of VEHICLES){assert.ok(v.emoji);assert.ok(v.category);assert.equal(v.liveries[0].id,'default');assert.equal(v.liveries[0].color,v.color);assert.ok(v.liveries.length>=3);assert.equal(new Set(v.liveries.map(l=>l.id)).size,v.liveries.length);}
 });
 test('important service labels use geometry and livery fallbacks stay deterministic',()=>{
- for(const [id,label] of [['police','110'],['ambulance','120'],['taxi','TAXI']]){const m=buildVehicle(id);assert.deepEqual(m.group.userData.labels,[label]);let maps=0;m.group.traverse(o=>{if(o.isMesh&&o.material.map)maps++;});assert.equal(maps,0);}
+ for(const [id,label] of [['police','110'],['ambulance','120'],['taxi','TAXI']]){const m=buildVehicle(id);assert.deepEqual(m.group.userData.labels,[label]);let textured=0,solid=0;m.group.traverse(o=>{if(o.isMesh){if(o.material.map){textured++;assert.ok(['paint','rubber','metal','leather'].includes(o.material.userData.surface));}else solid++;}});assert.ok(textured>0);assert.ok(solid>0,'service lettering retains untextured geometric strokes');}
  for(const v of VEHICLES){const m=buildVehicle(v.id,v.liveries[1].id);assert.equal(m.group.userData.liveryId,v.liveries[1].id);assert.equal(buildVehicle(v.id,'missing').group.userData.liveryId,'default');}
  assert.equal(buildVehicle('unknown').group.userData.vehicleId,'gclass');
 });

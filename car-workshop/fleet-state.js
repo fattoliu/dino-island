@@ -40,6 +40,7 @@ function normalize(raw, catalog) {
     const createdAt = typeof value.createdAt === 'number' && Number.isFinite(value.createdAt) && value.createdAt >= 0 ? value.createdAt : 0;
     if (createdAt !== value.createdAt) warnings.push('A car with an invalid creation time was recovered.');
     fleet.cars.push({id, vehicleId: value.vehicleId, liveryId: value.liveryId, createdAt});
+    if(Number.isFinite(value.lastParkedAt)&&value.lastParkedAt>=0&&Number.isInteger(value.parkingSlotId)&&value.parkingSlotId>=0&&value.parkingSlotId<6)Object.assign(fleet.cars.at(-1),{lastParkedAt:value.lastParkedAt,parkingSlotId:value.parkingSlotId});
     const template = templateFor(catalog, value.vehicleId);
     if (!template) warnings.push(`Unavailable vehicle template retained: ${value.vehicleId}`);
     else if (!liveriesFor(template).some(livery => livery.id === value.liveryId)) warnings.push(`Unavailable livery retained: ${value.liveryId}`);
@@ -99,3 +100,9 @@ export function changeCarLivery(fleet, instanceId, liveryId, catalog = []) {
   return next;
 }
 export function findCar(fleet, instanceId) { return fleet.cars.find(car => car.id === instanceId) ?? null; }
+
+export function markCarParked(fleet,instanceId,parkingSlotId,now=Date.now()) {
+ if(!findCar(fleet,instanceId))throw new RangeError('Unknown parked car.');
+ if(!Number.isInteger(parkingSlotId)||parkingSlotId<0||parkingSlotId>=6||!Number.isFinite(now)||now<0)throw new RangeError('Invalid parking event.');
+ const next=copyFleet(fleet);Object.assign(findCar(next,instanceId),{parkingSlotId,lastParkedAt:now});return next;
+}

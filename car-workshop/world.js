@@ -1,5 +1,6 @@
+import {PARKING_CENTER,PARKING_SLOTS} from './parking-state.js?v=6';
 import * as THREE from './vendor/three.module.min.js';
-import {BUILDINGS,getMissionTarget,getMissionInfo} from './world-state.js';
+import {BUILDINGS,getMissionTarget,getMissionInfo} from './world-state.js?v=6';
 
 // Handcrafted toy town. Static geometry is merged per color, keeping the whole
 // explorable world inexpensive on mobile and software WebGL renderers.
@@ -31,23 +32,29 @@ export function buildWorld(scene){
  }
  // A permanent collection parking court, connected to the west town road.
  // Snapshot models belong to the caller, not to this world's resource pool.
- const parkingCenter=Object.freeze({x:-12,z:-31});
- const parkingSlots=[[-17,-28],[-12,-28],[-7,-28],[-17,-35],[-12,-35],[-7,-35]];
- box(-12,.075,-31.5,20,.12,15,'#e5d3ad');box(-12,.15,-31.5,18.5,.08,13.5,'#7994a4');
- box(-20,.13,-25.5,3,.09,8,'#7994a4');
- for(const [x,z] of parkingSlots){
-  box(x,.2,z,4.2,.025,5,'#88a7b4');
-  for(const dx of [-2.1,2.1])box(x+dx,.22,z,.1,.025,5,'#fff4cf');
-  box(x,.22,z+(z>-31?2.5:-2.5),4.3,.025,.1,'#fff4cf');
-  box(x,.31,z+(z>-31?1.9:-1.9),1.7,.2,.3,'#f9d37c');
+ const parkingCenter=PARKING_CENTER;
+ const parkingSlots=PARKING_SLOTS;
+ box(-11,.075,-36.5,21,.12,26,'#e5d3ad');box(-11,.15,-36.5,20,.08,25,'#7994a4');
+ // Open west entrance and a broad middle aisle for long buses and trucks.
+ box(-21,.13,-36.5,6,.09,7,'#7994a4');
+ for(const {x,z,width:w,length:l} of parkingSlots){
+  box(x,.2,z,w,.025,l,'#88a7b4');
+  for(const dx of [-w/2,w/2])box(x+dx,.22,z,.1,.025,l,'#fff4cf');
+  box(x,.22,z+(z>-36?l/2:-l/2),w,.025,.1,'#fff4cf');
  }
+ const parkingMarker=group();parkingMarker.visible=false;
+ for(const x of [-2.7,2.7])box(x,.27,0,.16,.06,8,'#97ff99',0,parkingMarker);
+ for(const z of [-4,4])box(0,.27,z,5.4,.06,.16,'#97ff99',0,parkingMarker);
+ // A ground chevron points along the bay, independent of text/font support.
+ box(-.4,.28,.2,.12,.04,1.2,'#d9ff97',-.7,parkingMarker);box(.4,.28,.2,.12,.04,1.2,'#d9ff97',.7,parkingMarker);
+ function setParkingTarget(slotId=null,progress=0){const slot=parkingSlots.find(s=>s.id===slotId);parkingMarker.visible=!!slot;if(slot){parkingMarker.position.set(slot.x,0,slot.z);parkingMarker.scale.y=1+Math.max(0,Math.min(1,progress))*3;}}
  // A mesh-built P is readable without fonts, canvas, or texture downloads.
  box(-3.4,1.5,-25.5,.16,3,.16,'#7295a0');box(-3.4,3.2,-25.5,2.3,2.3,.22,'#588fca');
  box(-3.85,3.2,-25.35,.2,1.45,.08,'#fff8db');box(-3.35,3.83,-25.35,1.1,.2,.08,'#fff8db');
  box(-2.9,3.49,-25.35,.2,.85,.08,'#fff8db');box(-3.35,3.1,-25.35,1.1,.2,.08,'#fff8db');
  const parkedContainer=new THREE.Group();parkedContainer.name='我的汽车停车场';parkedContainer.visible=false;root.add(parkedContainer);
  function clearParkedCars(){for(const wrapper of [...parkedContainer.children]){for(const model of [...wrapper.children])wrapper.remove(model);parkedContainer.remove(wrapper);}parkedContainer.visible=false;}
- function setParkedCars(models=[]){clearParkedCars();const unique=[...new Set(models.map(m=>m?.group).filter(g=>g?.isObject3D))].slice(-6);unique.forEach((model,i)=>{const wrapper=new THREE.Group(),[x,z]=parkingSlots[i];wrapper.position.set(x,.24,z);wrapper.rotation.y=Math.PI/2;wrapper.scale.setScalar(.65);wrapper.add(model);parkedContainer.add(wrapper);});parkedContainer.visible=unique.length>0;return unique.length;}
+ function setParkedCars(models=[]){clearParkedCars();const unique=[...new Set(models.map(m=>m?.group).filter(g=>g?.isObject3D))].slice(-5);unique.forEach((model,i)=>{const wrapper=new THREE.Group(),{x,z}=parkingSlots[i];wrapper.position.set(x,.24,z);wrapper.rotation.y=Math.PI/2;wrapper.scale.setScalar(.65);wrapper.add(model);parkedContainer.add(wrapper);});parkedContainer.visible=unique.length>0;return unique.length;}
  // Crosswalks and bus stops.
  for(const [x,z] of [[-12,22],[12,22],[12,-22],[-12,-22]]){for(let n=0;n<5;n++)box(x-1.7+n*.85,.065,z,.5,.02,5,'#f6f4df');sign(x+5,z+4,'#68bba8','line');}
  // Central park with pond, winding pedestrian tiles, benches and visitors.
@@ -90,7 +97,7 @@ export function buildWorld(scene){
  const paceCars=[];for(const color of ['#f5b24b','#7ed5cc']){const car=group();box(0,.5,0,2.2,.65,1.15,color,0,car);box(-.2,.95,0,1.05,.5,.9,'#d5f1f3',0,car);for(const x of [-.7,.7])for(const z of [-.57,.57])ball(x,.3,z,.24,'#4c5973',car);paceCars.push(car);}
  const service=group();person(0,0,'#f4ba69',service);
  // Soft tree clusters and rounded hills beyond the playable town edges.
- for(const [x,z] of [[-50,-12],[-48,4],[-50,42],[-15,36],[-9,44],[5,38],[13,45],[23,30],[51,5],[50,19],[51,30],[-9,-43],[3,-39],[12,-45],[-52,-51],[-54,52]])tree(x,z,.85+(Math.abs(x)%3)*.15);
+ for(const [x,z] of [[-50,-12],[-48,4],[-50,42],[-15,36],[-9,44],[5,38],[13,45],[23,30],[51,5],[50,19],[51,30],[3,-51],[3,-39],[12,-45],[-52,-51],[-54,52]])tree(x,z,.85+(Math.abs(x)%3)*.15);
  for(let i=0;i<16;i++){const a=i*Math.PI/8,x=Math.cos(a)*78,z=Math.sin(a)*78;ball(x,-2,z,12+i%3*3,i%2?'#6b9e60':'#528e68');}
  // Map border is a forgiving low hedge rather than a visually endless road.
  for(let i=-54;i<=54;i+=6)for(const s of [-1,1]){ball(i,.2,s*58,1.4,'#358c45');ball(s*58,.2,i,1.4,'#358c45');}
@@ -110,5 +117,5 @@ export function buildWorld(scene){
  service.visible=['taxi','bus','schoolbus','minibus','icecream'].includes(id)&&!state.complete;if(service.visible)service.position.set(t.x+2,0,t.z+2);
  water.visible=id==='fire'&&state.step===1&&p>0&&!state.complete;if(water.visible)water.children.forEach((m,i)=>{const f=((i/7+time*.8)%1);m.position.set(state.x+(-36-state.x)*f,.8+Math.sin(f*Math.PI)*2,state.z+(-19.5-state.z)*f);});
  sparkles.visible=state.complete;if(state.complete){sparkles.position.set(state.x,0,state.z);sparkles.children.forEach((m,i)=>{const a=i*Math.PI/8+time,r=2+(Math.sin(time*2+i)+1);m.position.set(Math.cos(a)*r,2+(time*1.7+i*.3)%3,Math.sin(a)*r);});}return info;}
- return {root,update,setParkedCars,parkingCenter,missionTarget:getMissionTarget,dispose(){clearParkedCars();root.removeFromParent();root.traverse(o=>{if(o.isMesh)o.geometry.dispose();});for(const m of mats.values())m.dispose();}};
+ return {root,update,setParkedCars,setParkingTarget,parkingSlots,parkingCenter,missionTarget:getMissionTarget,dispose(){clearParkedCars();root.removeFromParent();root.traverse(o=>{if(o.isMesh)o.geometry.dispose();});for(const m of mats.values())m.dispose();}};
 }

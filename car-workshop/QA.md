@@ -1,3 +1,22 @@
+# Raster art and manual parking verification · 2026-11-08
+
+## Current revision
+
+- `npm test`: 143 tests pass. All 22 vehicles and their saved IDs/liveries remain. New cases cover every vehicle fitting every bay, correct alignment and low-speed dwell, partial/occupied/invalid parking, no duplicate completion, full-footprint obstacle collisions and safe in-place turning, re-parking only after clearing the prior bay, save round-trips, shared texture cache and finite UVs, original asset file signatures/transfer budget, celebration lifecycle and repeated audio replacement.
+- All authored JavaScript syntax checks and `git diff --check` pass. Dinosaur root entry and `dist/` unchanged.
+- Managed Chromium: `tests/browser-parking.html` passes 44/44 real-browser physics/persistence checks across all vehicles. These are simulated input/time steps, not a claim that 22 cars were each manually driven using a physical touchscreen.
+- Browser joystick fixture: 11/11. Real CSS layout fixture: 5/5 viewports (320×568, 390×844, 768×1024, 844×390, 1440×900).
+- `tests/browser-art.html`: all 9 textures decode successfully, with the expected dimensions. The real garage was visually inspected in CPU compatibility mode: original wall mural, textured concrete/bay, wood worktops and textured vehicles appear. Completed a 14-part G-class assembly using real UI clicks, observed the new celebration, drove into town and clicked return: the car stayed in the world with P guidance instead of teleporting. Then manually drove using real keyboard holds from town center to the parking court, steered into empty P5, reversed slightly to place the entire car inside the lines, released controls and observed “停车成功！已保存停车记录” with the car still in the bay.
+- Browser audio fixture: **22/22 real OfflineAudioContext signal checks pass**, including non-clipping layered celebration and silence after it ends. This is a signal assessment, not subjective listening.
+- Celebration preview shows shaded metallic ribbons, curls and highlights. It is original procedural canvas sprite artwork, not photographed party footage. Backing store is capped at 2.4 million pixels, particle count 144, lifetime 5.2 seconds; reduced-motion uses a static fade. File payload for all three images is 1,280,328 bytes.
+- Parking writes the vehicle collection and its last parking event without duplication. It does not restore a permanent literal arrangement of all town snapshots on every outing. Save remains local to the browser, with existing error handling.
+
+## Verification limits
+
+This browser disables WebGL. Actual GPU clear-coat, bump detail, shadow-map appearance and iPad/Safari performance cannot be certified here. The rendered CPU screenshots prove base-color textures/artwork and app workflows only. No physical iPad, hardware multi-touch or subjective loudspeaker listening test was performed. This revision improves materials and original art; it does not replace all geometry with professionally sculpted commercial game assets.
+
+---
+
 # Brighter garage and single-joystick verification · 2026-11-08
 
 - `npm test`: 116 tests passed, zero failures/skips on the combined working tree. The joystick tests dispatch cancelable events through native Node EventTarget and the actual installed pointer handlers (Node has no native DOM PointerEvent).

@@ -148,6 +148,7 @@ export class WorkshopAudio {
   }
   cheer() {
     if (!this._active()) return;
+    this._stopTag('cheer'); // Repeated celebrations replace, never stack crowd voices.
     const c = this.context, t = c.currentTime;
     // A small crowd: separately pitched, vowel-filtered rising/falling 'woo!' voices.
     for (let i = 0; i < 9; i++) {
@@ -171,7 +172,10 @@ export class WorkshopAudio {
       this._hiss(at, .06, .13, 1400 + (i % 4) * 330, 'cheer');
       this._hiss(at + .014, .035, .065, 2300, 'cheer');
     }
-    [72,76,79,84].forEach((n,i) => this._tone(hz(n), t + i * .12, .5, .07, 'triangle', null, 'cheer'));
+    // Original three-chord miniature fanfare, with a rounded bass and bell crown.
+    [[60,64,67],[62,67,71],[60,64,72]].forEach((chord,i)=>chord.forEach((n,j)=>this._tone(hz(n),t+i*.22+j*.014,i===2?.95:.34,.036,'triangle',null,'cheer')));
+    this._tone(hz(48),t+.44,.8,.045,'sine',null,'cheer');
+    [84,91].forEach((n,i)=>this._tone(hz(n),t+.48+i*.12,.75,.025,'sine',null,'cheer'));
   }
   startEngine() {
     if (this._disposed || this._engineWanted) return;

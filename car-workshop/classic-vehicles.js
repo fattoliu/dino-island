@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
+import {finishVehicleMaterials} from './materials.js?v=6';
 
 // All geometry is original, generated locally. X = forward, Y = up, Z = axle.
 export const CLASSIC_IDS = new Set(['gclass','landcruiser','bmw','ferrari','truck','fire','police','taxi','crane','excavator']);
@@ -92,11 +93,11 @@ function excavator(ctx){const paint=ctx.paint;ctx.dimensions={length:6.2,width:2
 
 export function buildClassicVehicle(cfg,livery){
  M=materials();
- const ctx={group:new THREE.Group(),parts:[],paint:mat(livery.color,.2,.34),accent:mat(livery.accent,.05,.42),dimensions:{length:5,width:2,height:2.5}};
+ const ctx={group:new THREE.Group(),parts:[],paint:new THREE.MeshPhysicalMaterial({color:livery.color,metalness:.32,roughness:.29,clearcoat:.72,clearcoatRoughness:.18}),accent:mat(livery.accent,.05,.42),dimensions:{length:5,width:2,height:2.5}};
  ctx.group.name=cfg.name;
  if(cfg.id==='excavator')excavator(ctx);else if(['truck','fire','crane'].includes(cfg.id))truckVehicle(ctx,cfg);else passenger(ctx,cfg);
  ctx.group.userData={vehicleId:cfg.id,liveryId:livery.id,style:'classic',labels:cfg.id==='police'?['110']:cfg.id==='taxi'?['TAXI']:[]};
- const size=new THREE.Box3().setFromObject(ctx.group).getSize(new THREE.Vector3());ctx.dimensions={length:size.x,width:size.z,height:size.y};
+ const bounds=new THREE.Box3().setFromObject(ctx.group),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());ctx.dimensions={length:size.x,width:size.z,height:size.y,offsetX:center.x,offsetZ:center.z};finishVehicleMaterials(ctx);
  return {group:ctx.group,parts:ctx.parts,dimensions:ctx.dimensions,animate(time,drive=false){if(!drive)return;for(const p of ctx.parts)if(p.id.startsWith('wheel-'))p.group.rotation.z=-time*3;}};
 }
 

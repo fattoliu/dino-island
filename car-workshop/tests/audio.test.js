@@ -60,7 +60,7 @@ test('hiding suspends, cancels queued sound, then restores one music loop and en
 });
 test('completion creates filtered crowd voices and handclaps, and disposal is final', () => {
   const a=make(); a.unlock(); a.cheer();
-  const crowd=[...a._voices].filter(v=>v.tag==='cheer'); assert.equal(crowd.length,65);
+  const crowd=[...a._voices].filter(v=>v.tag==='cheer'); assert.equal(crowd.length,73);
   assert.equal(crowd.filter(v=>v.nodes.filter(n=>n.type==='bandpass').length===2).length,9);
   a.dispose(); a.dispose(); a.unlock(); a.cheer(); a.startEngine();
   assert.equal(a._voices.size,0); assert.equal(a._timer,null); assert.equal(a.context.state,'closed');
@@ -111,3 +111,5 @@ test('siren is independent of engine, never runs in garage, and survives mute/vi
   a.setMode('garage'); assert.equal(sirens(a).length,0);
   a.dispose(); a.setSiren(true); a.startEngine(); a.unlock(); assert.equal(a._voices.size,0);
 });
+
+test('repeat celebrations replace previous fanfare and crowd without stacking voices',()=>{const a=make();a.unlock();a.cheer();const old=[...a._voices].filter(v=>v.tag==='cheer');a.cheer();assert.equal([...a._voices].filter(v=>v.tag==='cheer').length,73);assert.ok(old.every(v=>v.source.stopped));a.setEnabled(false);assert.equal(a._voices.size,0);a.dispose();});

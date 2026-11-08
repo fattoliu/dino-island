@@ -1,14 +1,15 @@
 import * as THREE from './vendor/three.module.min.js';
-import {CLASSIC_IDS,buildClassicVehicle} from './classic-vehicles.js?v=5.2';
+import {finishVehicleMaterials} from './materials.js?v=6';
+import {CLASSIC_IDS,buildClassicVehicle} from './classic-vehicles.js?v=6';
 
 // Original detailed miniature vehicles with crisp panels and small edge bevels.
 // No emoji artwork, brand logos, fonts, textures or external models are copied.
 // +X is the nose; +Y is up. Labels are real geometry in BOTH renderers.
 const catalog = [
  ['gclass','方盒子大G','大G','🚙','越野车','#15934e','#fff2b0'],
- ['landcruiser','探险越野车','兰德酷路泽','🚙','越野车','#f3a416','#fff5da'],
- ['bmw','蓝色运动赛车','宝马赛车','🏎️','赛车','#0874d9','#fff5da'],
- ['ferrari','流线超级跑车','法拉利','🏎️','赛车','#e52b2f','#fff0ae'],
+ ['landcruiser','探险越野车','探险越野车','🚙','越野车','#f3a416','#fff5da'],
+ ['bmw','蓝色运动赛车','运动赛车','🏎️','赛车','#0874d9','#fff5da'],
+ ['ferrari','流线超级跑车','超级跑车','🏎️','赛车','#e52b2f','#fff0ae'],
  ['truck','长途大卡车','大卡车','🚛','大卡车','#009eaf','#ffd356'],
  ['fire','云梯消防车','消防车','🚒','救援车','#e62e26','#fff5db'],
  ['police','110巡逻警车','警车','🚓','救援车','#faf9ed','#155cc4'],
@@ -190,9 +191,9 @@ function excavator(ctx){fixed(ctx,g=>{box(g,-.55,.47,0,2.7,.38,1.5,M.dark,.13);c
 export function buildVehicle(id='gclass',liveryId='default'){
  M=materials();const cfg=VEHICLES.find(v=>v.id===id)||VEHICLES[0],livery=cfg.liveries.find(l=>l.id===liveryId)||cfg.liveries[0];
  if(CLASSIC_IDS.has(cfg.id))return buildClassicVehicle(cfg,livery);
- const ctx={group:new THREE.Group(),parts:[],paint:material(livery.color,.34,.12),accent:material(livery.accent||'#fff3bd',.36)};
+ const ctx={group:new THREE.Group(),parts:[],paint:new THREE.MeshPhysicalMaterial({color:livery.color,metalness:.26,roughness:.29,clearcoat:.72,clearcoatRoughness:.18}),accent:material(livery.accent||'#fff3bd',.36)};
  ctx.group.name=cfg.name;ctx.group.userData={vehicleId:cfg.id,liveryId:livery.id,style:'crisp',labels:cfg.id==='police'?['110']:cfg.id==='ambulance'?['120']:cfg.id==='taxi'?['TAXI']:[]};
  if(cfg.id==='excavator')excavator(ctx);else if(cfg.id==='tractor')tractor(ctx);else if(['truck','fire','crane','garbage','mixer'].includes(cfg.id))commercial(ctx,cfg);else if(['ambulance','bus','schoolbus','minibus','van','camper','icecream'].includes(cfg.id))van(ctx,cfg);else car(ctx,cfg);
- ctx.group.updateMatrixWorld(true);const size=new THREE.Box3().setFromObject(ctx.group).getSize(new THREE.Vector3());
- return {group:ctx.group,parts:ctx.parts,dimensions:{length:size.x,width:size.z,height:size.y},animate(time,drive=false){if(!drive)return;for(const p of ctx.parts)if(p.id.startsWith('wheel-'))p.group.rotation.z=-time*3;}};
+ ctx.group.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(ctx.group),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());finishVehicleMaterials(ctx);
+ return {group:ctx.group,parts:ctx.parts,dimensions:{length:size.x,width:size.z,height:size.y,offsetX:center.x,offsetZ:center.z},animate(time,drive=false){if(!drive)return;for(const p of ctx.parts)if(p.id.startsWith('wheel-'))p.group.rotation.z=-time*3;}};
 }
