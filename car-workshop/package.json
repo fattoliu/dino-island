@@ -1,1 +1,10 @@
-{"name":"little-car-workshop","version":"1.0.0","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.js"},"description":"A child-friendly, touch-first 3D car assembly game. No build step required."}
+{
+  "name": "little-car-workshop",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "description": "Ten original vehicle assemblies in a full 3D touch-first garage."
+}

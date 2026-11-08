@@ -1,29 +1,24 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#f6f3eb">
-<meta name="description" content="小小汽车工坊：为小朋友制作的 3D 汽车拆解与拼装小游戏。支持触屏拖动、转动观察和自由换色。">
-<title>小小汽车工坊 · Little Car Workshop</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23ed754b'/%3E%3Ctext x='8' y='47' font-size='45'%3E🚗%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="./style.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#163b40"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="走进小小车库，在自由的 3D 空间里亲手拼装十种汽车。"><title>小小车库 · 3D 汽车工坊</title><link rel="stylesheet" href="./style.css?v=2">
 </head>
 <body>
-<main class="workshop">
-<header class="topbar">
- <div class="brand"><div class="brand-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M8 24V18l5-7h13l5 7v6M7 19h26v8H7zM14 12v7m12-7v7"/><circle cx="12" cy="28" r="3"/><circle cx="28" cy="28" r="3"/></svg></div><div><h1>小小汽车工坊</h1><span>LITTLE CAR WORKSHOP</span></div></div>
- <div class="top-actions"><span class="safe-label"><i></i> 自由玩，没有倒计时</span><button id="sound" class="icon-button" aria-label="开启声音" title="开启声音">♪<span class="slash"></span></button><button id="help" class="icon-button" aria-label="玩法帮助">?</button></div>
-</header>
-<section class="intro"><div><div class="eyebrow">你好呀，小小工程师！</div><h2 id="headline">你的第一辆小汽车。</h2><p id="instruction" aria-live="polite">拆开看看里面，再亲手把它拼回来。</p></div><div class="progress"><div class="progress-top"><span>拼装进度</span><strong id="count">9 <small>/ 9</small></strong></div><div class="progress-track"><div id="progress-fill"></div></div><div class="progress-note" id="progress-note">每一个零件，都很重要</div></div></section>
-<section class="play-area" aria-label="3D 汽车拼装区域">
- <div class="scene" id="scene"><div class="loading" id="loading">正在把小汽车开进车库…</div><div class="scene-badge"><span></span> 01 / 快乐小轿车</div><div id="target" class="snap-target" hidden><span>放到这里</span></div><div id="toast" class="toast" role="status"></div><div class="view-tip">↔ 拖动空白处转一转 · 双指缩放</div><div class="view-controls"><button id="zoomout" class="round-button" aria-label="缩小">−</button><button id="viewreset" class="round-button" aria-label="恢复视角">↺</button><button id="zoomin" class="round-button" aria-label="放大">+</button></div></div>
- <aside class="tool-panel"><div class="panel-heading"><span>我的小车库</span><span class="tiny-star">✦</span></div><button class="primary" id="start"><span class="button-symbol">↗</span><span id="start-label">拆开，开始拼装</span></button><div class="mode-picker" aria-label="选择玩法"><button id="assemble" class="active" aria-pressed="true">▧ 拼一拼</button><button id="disassemble" aria-pressed="false">⚒ 拆一拆</button></div><div class="divider"></div><div class="color-label">给汽车换个颜色 <span>●</span></div><div class="colors" aria-label="汽车颜色"><button data-color="#ee7951" aria-label="珊瑚橙" aria-pressed="true" class="color selected" style="--swatch:#ee7951"></button><button data-color="#66b9bd" aria-label="湖水蓝" aria-pressed="false" class="color" style="--swatch:#66b9bd"></button><button data-color="#e9bc4c" aria-label="阳光黄" aria-pressed="false" class="color" style="--swatch:#e9bc4c"></button><button data-color="#a396cf" aria-label="葡萄紫" aria-pressed="false" class="color" style="--swatch:#a396cf"></button></div><div class="part-info" id="part-info"><div class="info-icon" id="info-icon">✦</div><h3 id="part-name">动动手，发现小秘密</h3><p id="part-description">车轮、发动机、车身……<br>小汽车是怎么组成的呢？</p><button id="assist" class="assist" hidden>帮我装上这个零件 →</button></div><button id="drive" class="drive">完成啦，试驾一下 →</button></aside>
-</section>
-<section class="parts-section" aria-label="零件托盘"><div class="parts-heading"><h3>零件小工位 <span id="remaining">9 个零件已就位</span></h3><span class="tray-tip">选择零件，再拖到车上</span></div><div id="tray" class="tray"></div></section>
-<footer><span>一点一点，拼出大大的成就感。</span><span class="footer-mark">MADE FOR LITTLE HANDS <span>✳</span></span></footer>
-</main>
-<div id="drag-ghost" hidden></div>
-<dialog id="help-dialog"><button class="dialog-close" id="help-close" aria-label="关闭帮助">×</button><div class="dialog-emoji">🛠️</div><h2>小小工程师，开工啦！</h2><ol><li><b>拆开看看</b><span>点「拆开，开始拼装」，或者选「拆一拆」后点车上的零件。</span></li><li><b>亲手拼回来</b><span>把下方零件拖到发光圆圈。也可以先点零件，再点发光圆圈。</span></li><li><b>转一转，换换色</b><span>拖动空白处转动汽车，双指缩放。拼好后，试驾你的小汽车！</span></li></ol><button class="primary" id="help-go">我知道啦，开始玩！</button><p class="parent-note">这是简化的玩具汽车模型，不代表真实汽车维修步骤。</p></dialog>
-<dialog id="win-dialog"><div class="dialog-emoji">🏁</div><div class="eyebrow">小小工程师 · 大大成就感</div><h2>出发！这是你造的汽车。</h2><p>9 个零件，全部拼好了。<br>每一颗车轮、每一块车身，都是你的杰作！</p><button id="win-drive" class="primary">开着小车兜一圈 →</button><button id="win-continue" class="text-button">再看看我的小汽车</button></dialog>
-<noscript>这个小游戏需要开启 JavaScript 才能运行。</noscript>
-<script type="module" src="./app.js"></script>
+<main id="scene" aria-label="三维汽车拼装车库"><div id="loading"><div class="loading-mark">⚙</div><strong>打开车库...</strong></div></main>
+<div class="hud">
+ <header class="topbar">
+  <button id="garage" class="vehicle-button" aria-label="打开车库，选择车型"><span class="garage-icon">▦</span><span><small>小小车库</small><strong id="vehicle-name">奔驰大 G</strong></span><span class="chevron">⌄</span></button>
+  <div class="top-actions"><button id="sound" class="icon-button" aria-label="开启声音" title="开启声音"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6m0-6-5 6"/></svg></button><button id="help" class="icon-button" aria-label="怎么玩">?</button></div>
+ </header>
+ <div id="part-tag" hidden><span id="part-name"></span><button id="fit" aria-label="装好这个零件">装上 ✓</button><button id="detach" aria-label="拆下这个零件">拆下 ↗</button><button id="deselect" aria-label="取消选择">×</button></div>
+ <button id="target" hidden aria-label="把选中的零件装到这里"><span>＋</span></button>
+ <div id="hint"><span class="hand">☝</span> 拖动零件，拼到车上</div>
+ <div class="view-tools"><button id="zoom-in" class="icon-button" aria-label="放大">＋</button><button id="zoom-out" class="icon-button" aria-label="缩小">−</button><button id="home-view" class="icon-button" aria-label="回到完整视角"><svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M6 9v11h12V9M9 20v-7h6v7"/></svg></button></div>
+ <footer class="bottom-bar"><button id="reset" class="tool-button" aria-label="重新拆开这辆车"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 0 6M4 3v6h6"/></svg><span>拆开</span></button><div id="parts" class="parts-strip" aria-label="这辆车的零件"></div><button id="drive" class="drive-button" hidden><span>▶</span> 出发</button></footer>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="garage-dialog"><div class="dialog-header"><div><small>选一辆，开始拼！</small><h1>我的车库</h1></div><button class="dialog-close" data-close="garage-dialog" aria-label="关闭车型选择">×</button></div><div id="vehicle-grid"></div><p class="catalog-note">原创拼装模型 · 车型外形参考 · 非品牌官方模型</p></dialog>
+<dialog id="help-dialog"><div class="dialog-header"><h1>一起动手吧</h1><button class="dialog-close" data-close="help-dialog" aria-label="关闭帮助">×</button></div><div class="help-grid"><div><b>☝</b><strong>拖一拖</strong><span>拖住零件，靠近发光位置</span></div><div><b>↻</b><strong>转一转</strong><span>空白处单指拖动，绕车看一圈</span></div><div><b>↔</b><strong>双指移动</strong><span>双指一起滑动看四周，捏合缩放</span></div><div><b>✓</b><strong>轻点也可以</strong><span>点零件，再点「装上」；装好后可拆下</span></div></div><p class="desktop-note">电脑：鼠标拖动旋转 · 右键拖动平移 · 滚轮缩放 · 方向键移动视角</p><button class="primary" data-close="help-dialog">我来试试</button></dialog>
+<dialog id="win-dialog"><button class="dialog-close" data-close="win-dialog" aria-label="继续查看">×</button><div class="win-stars">✦ ★ ✦</div><h1>拼好啦！</h1><p id="win-name">准备出发</p><button id="win-drive" class="primary">开出去兜一圈 ▶</button><button id="win-garage" class="secondary">再拼一辆</button></dialog>
+<script type="module" src="./app.js?v=2"></script>
 </body></html>
