@@ -10,7 +10,7 @@ try{
   const article=document.createElement('article');article.innerHTML=`<h2>${width} × ${height}</h2>`;
   const frame=document.createElement('iframe');frame.width=width;frame.height=height;frame.title=`Driving UI at ${width} by ${height}`;article.append(frame);document.querySelector('#frames').append(article);
   await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=reject;frame.srcdoc=source;});
-  const d=frame.contentDocument;d.body.classList.add('driving');d.getElementById('driving-hud').hidden=false;d.getElementById('siren').hidden=false;d.getElementById('siren').textContent='警笛开';d.getElementById('loading')?.remove();
+  const d=frame.contentDocument;d.body.classList.add('driving');d.getElementById('driving-hud').hidden=false;d.getElementById('siren').hidden=false;d.getElementById('mission-action').hidden=false;d.getElementById('siren').textContent='警笛开';d.getElementById('loading')?.remove();
   d.getElementById('mission-title').textContent='友善巡逻';d.getElementById('mission-instruction').textContent='追上带黄色标记的淘气小车';d.getElementById('mission-progress').textContent='1 / 2 · 距目标 33 米';
   await new Promise(resolve=>frame.contentWindow.requestAnimationFrame(()=>frame.contentWindow.requestAnimationFrame(resolve)));
   const ids=['steering-stick','accelerate','brake','reverse','siren','return-garage','mission-action'];

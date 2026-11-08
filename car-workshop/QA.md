@@ -13,5 +13,12 @@
 
 - Actual WebGL appearance/performance is not certified: this cloud browser disables WebGL; launching an independent Chromium also fails under environment process/socket restrictions. The CPU screenshots do not certify PBR, reflections or real shadow-map quality.
 - No physical iPad, Safari, hardware multi-touch or listening assessment is available.
-- Browser smoke testing of the published revision is recorded below after deployment.
 - Sirens are original synthesized game sounds, not authentic emergency-service recordings. Engine variety is eight classes, not 22 independent real recordings.
+
+## Published browser checks
+
+- Pages deployment for `e5bb2bf39ccd88b022a5600892eeb53de451cf7f` succeeded. The public page serves `app.js?v=5.1`.
+- Real browser flow: police assembled and saved; drove into town; held analog steering with forward input, observed turning and movement; braked to zero; reversed; switched siren off; returned to the parking lot; reloaded and recovered the saved police; opened its livery picker.
+- Repeated rapid part-button/target clicks on the final revision: 14 of 14 G-Class parts installed without missed taps, with collection count increasing from one to two. Entering the town again shows the correct vehicle mission.
+- Production Web Audio graph rendered by real Chromium OfflineAudioContext: **20/20 signal checks passed**. The three siren contours, continued scheduling, all eight distinct engine-class pitches and zero output after global mute/siren-off were measured from PCM samples. This is not a subjective listening test. Reproduce at `tests/browser-audio.html`.
+- Static browser layout fixtures at 320×568, 390×844, 768×1024, 844×390 and 1440×900 check touch controls against real CSS. Driving controls have at least 44px touch dimensions, remain inside the viewport and do not overlap each other. Reproduce at `tests/browser-layout.html`. These are CSS layout fixtures, not physical-device testing.
