@@ -2,8 +2,10 @@ import * as THREE from './vendor/three.module.min.js';
 
 // A color-preserving, directional studio setup. Do not compensate with a
 // saturation filter: over-bright fill + a white environment erased the planes.
+// Lift indirect light, not exposure or the sun: shaded panels stay readable
+// while bright paint, highlights and the direction of the shadows stay intact.
 export const VISUALS = Object.freeze({
-  exposure:1, ambient:.78, key:2.7, fill:.32, environment:.28,
+  exposure:1, ambient:.98, key:2.7, fill:.44, environment:.34,
   garageSky:'#62b8dc', townSky:'#55b2e1', shadowSize:2048,
 });
 export function configureRenderer(renderer){
@@ -14,7 +16,7 @@ export function configureRenderer(renderer){
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 }
 export function addLighting(scene,{shadows=true}={}){
-  const hemisphere=new THREE.HemisphereLight('#e5f2ff','#354158',VISUALS.ambient);
+  const hemisphere=new THREE.HemisphereLight('#e5f2ff','#46536b',VISUALS.ambient);
   const key=new THREE.DirectionalLight('#fff7e8',VISUALS.key);
   const fill=new THREE.DirectionalLight('#a3d5ff',VISUALS.fill);
   key.castShadow=shadows;key.shadow.mapSize.set(VISUALS.shadowSize,VISUALS.shadowSize);

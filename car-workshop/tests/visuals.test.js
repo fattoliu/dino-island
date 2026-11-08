@@ -10,7 +10,7 @@ test('color preserving display transform and moderate fill apply consistently',(
  const renderer={shadowMap:{}};configureRenderer(renderer);
  assert.equal(renderer.outputColorSpace,THREE.SRGBColorSpace);
  assert.equal(renderer.toneMapping,THREE.NeutralToneMapping);assert.equal(renderer.toneMappingExposure,1);
- assert.equal(renderer.shadowMap.enabled,true);assert.ok(VISUALS.ambient<VISUALS.key*.35);assert.ok(VISUALS.fill<VISUALS.key*.15);
+ assert.equal(renderer.shadowMap.enabled,true);assert.ok(VISUALS.ambient<VISUALS.key*.4);assert.ok(VISUALS.fill<VISUALS.key*.18);
  const cpu={shadowMap:{},isSoftwareRenderer:true};configureRenderer(cpu);assert.equal(cpu.shadowMap.enabled,false);
 });
 test('sun and target follow distant vehicles without changing light direction',()=>{
@@ -34,4 +34,28 @@ test('town buildings and props cast shadows; flat ground remains a receiver',()=
  const scene=new THREE.Scene(),world=buildWorld(scene);let casts=0,receives=0,flatReceivers=0;
  world.root.traverse(o=>{if(!o.isMesh)return;if(o.castShadow)casts++;if(o.receiveShadow)receives++;o.geometry.computeBoundingBox();const b=o.geometry.boundingBox;if(b.max.y<=.5&&b.max.y-b.min.y<.25&&!o.castShadow&&o.receiveShadow)flatReceivers++;});
  assert.ok(casts>25,`${casts} casters`);assert.ok(receives>casts);assert.ok(flatReceivers>0);world.dispose();
+});
+
+// Guard the narrow brightness correction: keep headroom and directional contrast.
+test('shadow fill increases without turning up exposure or washing out the key',()=>{
+ const scene=new THREE.Scene(),rig=addLighting(scene);
+ assert.equal(VISUALS.exposure,1);assert.equal(VISUALS.key,2.7);
+ assert.ok(VISUALS.ambient>=.9&&VISUALS.ambient<=1);
+ assert.ok(VISUALS.fill>=.4&&VISUALS.fill<=.48);
+ assert.ok(VISUALS.environment>=.32&&VISUALS.environment<=.36);
+ assert.equal(rig.hemisphere.groundColor.getHexString(),'46536b');
+ assert.ok(rig.key.intensity>rig.fill.intensity*5);
+ assert.equal(rig.key.castShadow,true);
+});
+test('dark mechanical materials stay dark but no longer start near pure black',()=>{
+ for(const id of ['truck','gclass','ambulance','bus']){
+  const vehicle=buildVehicle(id),colors=new Set();
+  vehicle.group.traverse(o=>{if(o.isMesh)colors.add(o.material.color.getHexString());});
+  if(CLASSIC_IDS.has(id)){
+   for(const color of ['1e2630','2c3540','293949','142230'])assert.ok(colors.has(color),id+': '+color);
+  } else {
+   for(const color of ['1c2936','2a3e53'])assert.ok(colors.has(color),id+': '+color);
+  }
+  assert.ok(!colors.has('0b1520'));assert.ok(!colors.has('141e29'));
+ }
 });

@@ -1,6 +1,24 @@
-# Verification · 2026-11-08 · Crisp vehicles, directional light and touch driving
+# Brighter garage and single-joystick verification · 2026-11-08
 
-## Passed on this revision
+- `npm test`: 116 tests passed, zero failures/skips on the combined working tree. The joystick tests dispatch cancelable events through native Node EventTarget and the actual installed pointer handlers (Node has no native DOM PointerEvent).
+- Both axes, all diagonal quadrants, proportional input, circular boundaries, deadzone, independent second fingers, release/cancel/lost capture, document release/cancel, blur, hidden tab, resize/re-measurement, capture failure and disposal are covered. Production world-physics tests verify safe stopping and continuous reversal through zero in both directions.
+- One visible touch joystick replaces the pedals. Up means forward, down reverse, left/right steering. Neutral longitudinal input applies automatic slowing. Keyboard controls, sirens, missions and persistence IDs are retained. Accessibility exposes the control as a group with separate read-only axis meters, rather than incorrectly calling a two-axis joystick one horizontal slider.
+- `node --check` of all authored modules and `git diff --check` passed.
+- `tests/browser-joystick.html` is a reproducible real-DOM synthetic PointerEvent fixture. It imports production joystick and world physics; capture is stubbed because untrusted events cannot own hardware pointers. Executed in Chromium: 11/11 pointer fixture checks passed. The updated single-joystick `tests/browser-layout.html` passed 5/5 viewport checks (320×568, 390×844, 768×1024, 844×390 and 1440×900). No physical device certification is claimed.
+
+## Current browser and visual checks
+
+- Real browser mouse holds on the actual game joystick drove forward, drove diagonally while turning, and reversed. After each release, speed returned to 0 km/h and both axis meters returned to 0. Returned to parking successfully.
+- Truck assembled to 16/16 and saved as the fourth local test vehicle. One rapid target click needed retry during the assembly run; ordinary retry succeeded. The assembly input logic was not changed in this revision.
+- Reviewed a production CPU-rendered contact sheet of all 22 vehicles against the preceding revision. On these fixed-camera model samples, dark pixels (previous luminance below 45/255) rose about 20%, model pixels overall about 5%, and painted midtones about 4%. No new clipped highlights in these samples. These are CPU sample measurements, not a promise about WebGL output.
+- WebGL configuration raises hemisphere, reverse fill and environment moderately, with the same exposure (1), key intensity (2.7), sRGB/Neutral transform and shadow-map setup. Garage floor/bay colors are slightly brighter; vehicle paint palettes and geometry are unchanged. Rubber/chassis bases are modestly lifted. Two new tests exercise actual CPU rasterized pixels for directional contrast and saturated, unclipped color.
+- Browser console confirms WebGL is disabled here. Actual GPU PBR appearance, reflections, shadow maps and device performance remain unverified. No CSS brightness/saturation overlay was used.
+
+## Historical verification before the single-joystick revision
+
+### Crisp vehicles, directional light and touch driving
+
+### Passed on the previous revision
 
 - `npm test`: 109 tests passed, zero failures/skips. Includes all 22 templates/83 liveries, assembly cycles, persistent collection, every mission chain, world construction, eight engine profiles, three distinct sirens, cleanup/mute and analog gesture behavior.
 - Syntax checks of all authored JavaScript modules; `git diff --check`.

@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Two-axis joystick QA</title>
+<link rel="stylesheet" href="../style.css"><style>body{overflow:auto;padding:24px;background:#edf1f5;color:#173e53;position:static}#results{white-space:pre-wrap}#fixture{margin:24px}.pass{color:#176c32}.fail{color:#a21a24}</style>
+<h1>Two-axis joystick QA</h1><p>Real DOM PointerEvents dispatched synthetically through the production joystick module. Pointer capture is stubbed because synthetic events do not create an active hardware pointer. This does not certify physical iPad, Safari or hardware multi-touch.</p><h2 id="status">RUNNING</h2><pre id="results"></pre><div id="fixture" class="steering-stick"><span class="stick-knob">✥</span><span data-axis="steer" role="meter" aria-label="Steering" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"></span><span data-axis="drive" role="meter" aria-label="Forward / reverse" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"></span></div>
+<script type="module">
+import {bindSteeringStick} from '../touch-controls.js';
+import {createWorldState,stepWorld} from '../world-state.js';
+const el=document.querySelector('#fixture'),report=[];let captured=null,output;
+el.setPointerCapture=id=>{captured=id;};el.hasPointerCapture=id=>captured===id;el.releasePointerCapture=id=>{captured=null;emit('lostpointercapture',0,0,{pointerId:id});};
+const binding=bindSteeringStick(el,v=>output=v);
+function emit(type,x=0,y=0,extra={}){const r=el.getBoundingClientRect(),radius=Math.min(r.width,r.height)*.3;el.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:1,pointerType:'touch',button:0,clientX:r.left+r.width/2+x*radius,clientY:r.top+r.height/2+y*radius,...extra}));}
+function assert(ok,label){if(!ok)throw Error(label);}
+const zero=()=>assert(output.steer===0&&output.drive===0,'both axes neutral');
+function check(name,fn){binding.reset();try{fn();report.push({name,pass:true});}catch(e){report.push({name,pass:false,error:e.message});}}
+for(const pointerType of ['touch','mouse'])check(`${pointerType}: both cardinal axes and proportional diagonal`,()=>{
+ for(const [x,y,s,d] of [[1,0,1,0],[-1,0,-1,0],[0,-1,0,1],[0,1,0,-1]]){emit('pointerdown',x,y,{pointerType});assert(Math.abs(output.steer-s)<1e-6&&Math.abs(output.drive-d)<1e-6,'axis mapping');emit('pointerup');zero();}
+ emit('pointerdown',.5,-.5,{pointerType});assert(output.steer>0&&output.drive>0,'diagonal forward turn');assert(output.steer<1&&output.drive<1,'proportional');emit('pointermove',-.5,.5);assert(output.steer<0&&output.drive<0,'diagonal reverse turn');
+});
+check('deadzone and circular saturation',()=>{emit('pointerdown',.05,.05);zero();emit('pointermove',10,-10);assert(output.steer>0&&output.drive>0,'saturated diagonal');const x=parseFloat(el.style.getPropertyValue('--stick-x')),y=parseFloat(el.style.getPropertyValue('--stick-y'));assert(Math.hypot(x,y)<=el.getBoundingClientRect().width*.3+.01,'bounded thumb');});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])check(`${type}: neutral and fresh gesture`,()=>{emit('pointerdown',.5,-.5);emit(type);zero();assert(captured===null,'capture released');emit('pointermove',0,-1);zero();emit('pointerdown',0,1,{pointerId:3});assert(output.drive<0,'fresh gesture');});
+check('second pointer cannot take over or release',()=>{emit('pointerdown',.5,-.5);const before=JSON.stringify(output);for(const type of ['pointerdown','pointermove','pointerup','pointercancel'])emit(type,-1,1,{pointerId:2});assert(JSON.stringify(output)===before,'owner remains');emit('pointerup');zero();});
+for(const type of ['blur','resize'])check(`${type}: clears both axes`,()=>{emit('pointerdown',.5,-.5);window.dispatchEvent(new Event(type));zero();});
+check('production physics: release stops and opposing input crosses zero smoothly',()=>{
+ for(const sign of [-1,1]){const state=createWorldState('sedan');state.speed=sign*3;for(let i=0;i<60;i++)stepWorld(state,{brake:.45},1/60);assert(state.speed===0,'release stops');state.speed=sign*3;let prev=state.speed,crossed=false;for(let i=0;i<90;i++){stepWorld(state,sign>0?{reverse:1}:{throttle:1},1/60);assert(Math.abs(state.speed-prev)<.2,'continuous deceleration');if(Math.sign(state.speed)===-sign)crossed=true;prev=state.speed;}assert(crossed,'changes direction');}
+});
+check('dispose clears and detaches',()=>{emit('pointerdown',.5,-.5);binding.destroy();zero();emit('pointerdown',0,-1);zero();binding.destroy();});
+const failures=report.filter(r=>!r.pass);document.querySelector('#status').textContent=`${failures.length?'FAIL':'PASS'}: ${report.length-failures.length}/${report.length}`;document.querySelector('#status').className=failures.length?'fail':'pass';document.querySelector('#results').textContent=JSON.stringify(report,null,2);
+</script></html>

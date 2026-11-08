@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
-import {CLASSIC_IDS,buildClassicVehicle} from './classic-vehicles.js?v=5';
+import {CLASSIC_IDS,buildClassicVehicle} from './classic-vehicles.js?v=5.2';
 
 // Original detailed miniature vehicles with crisp panels and small edge bevels.
 // No emoji artwork, brand logos, fonts, textures or external models are copied.
@@ -45,7 +45,7 @@ const PI=Math.PI;
 const material=(color,roughness=.38,metalness=.12,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 let M;
 function materials(){return {
- rubber:material('#141e29',.88,.02),dark:material('#203247',.6,.08),chrome:material('#d9e7ee',.28,.5),
+ rubber:material('#1c2936',.88,.02),dark:material('#2a3e53',.6,.08),chrome:material('#d9e7ee',.28,.5),
  white:material('#f6f7f2',.52,0),glass:material('#123f58',.26,.12),shine:material('#65c7e4',.3),
  lamp:material('#fff3b9',.25,.1,{emissive:'#ffe8a0',emissiveIntensity:.25}),
  red:material('#f14b62'),blue:material('#3998ef'),amber:material('#ffbc39'),seat:material('#ebaf6a'),

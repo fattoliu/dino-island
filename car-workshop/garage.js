@@ -7,7 +7,7 @@ export function buildGarage(scene) {
   const mat = (color, roughness=.65, metalness=0) => {
     const m = new THREE.MeshStandardMaterial({color, roughness, metalness}); resources.push(m); return m;
   };
-  const concrete=mat('#6b9eae', .94), seam=mat('#527e90'), navy=mat('#173e60',.46,.3), teal=mat('#008daf',.42,.25);
+  const concrete=mat('#72a7b7', .94), seam=mat('#527e90'), navy=mat('#173e60',.46,.3), teal=mat('#008daf',.42,.25);
   const cream=mat('#e5dbc1'), yellow=mat('#ffbf13',.46), black=mat('#273239'), metal=mat('#aebcc0',.32,.7);
   const rubber=mat('#253033',.92), red=mat('#ed4d30',.42), wood=mat('#f2bd68'), white=mat('#fffdf0'), blue=mat('#168ed5');
   const glow=new THREE.MeshStandardMaterial({color:'#fff5d6',emissive:'#fff1bf',emissiveIntensity:1.3,roughness:.3}); resources.push(glow);
@@ -42,7 +42,7 @@ export function buildGarage(scene) {
   box(concrete,0,-.13,0,27,.25,25);
   for(let x=-12;x<=12;x+=3)box(seam,x,.001,0,.018,.007,24);
   for(let z=-12;z<=12;z+=3)box(seam,0,.002,z,26,.007,.018);
-  const bay=mat('#387e96',.9);roundBox(bay,0,.004,0,9.4,.009,6.5);
+  const bay=mat('#40899f',.9);roundBox(bay,0,.004,0,9.4,.009,6.5);
   // Paint corner marks and short, alternating hazard bars.
   for(const s of [-1,1]) {
     box(yellow,0,.015,s*3.35,9.8,.014,.09);

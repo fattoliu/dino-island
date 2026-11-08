@@ -1,13 +1,13 @@
 import * as THREE from './vendor/three.module.min.js';
-import {configureRenderer,addLighting,createEnvironment,setBackdrop} from './visuals.js?v=5';
-import {bindSteeringStick} from './touch-controls.js?v=5';
-import { VEHICLES, buildVehicle } from './vehicles.js?v=5';
+import {configureRenderer,addLighting,createEnvironment,setBackdrop} from './visuals.js?v=5.2';
+import {bindSteeringStick} from './touch-controls.js?v=5.2';
+import { VEHICLES, buildVehicle } from './vehicles.js?v=5.2';
 import { WorkshopAudio } from './audio.js?v=5';
 import { buildWorld } from './world.js?v=5';
 import { createWorldState, stepWorld, restartMission, getMissionTarget, getMissionInfo, BUILDINGS } from './world-state.js?v=5';
 import { readFleet, saveFleet, addFinishedCar, changeCarLivery, findCar, STORAGE_KEY } from './fleet-state.js?v=5';
-import { buildGarage } from './garage.js?v=5';
-import { SoftwareRenderer } from './software-renderer.js?v=5';
+import { buildGarage } from './garage.js?v=5.2';
+import { SoftwareRenderer } from './software-renderer.js?v=5.2';
 import { createGame, selectPart, installPart, removePart, disassembleAll, isComplete, isNearTarget, clamp } from './game-state.js?v=5';
 const $ = id => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -17,7 +17,7 @@ let width = innerWidth, height = innerHeight, theta = .69, phi = .95, distance =
 let focus = new THREE.Vector3(0,1,0), cameraDirty = true, driveStart = 0, confetti = [], frame = 0, lastTime = 0, lastRender = 0;
 let pointers = new Map(), gesture = null, pinch = null, animations = [], thumbnails = new Map(), thumbnailQueue = [], thumbBusy = false;
 const sound = new WorkshopAudio();
-let steeringStick=null, analogSteer=0, thumbnailRenderer=null, thumbnailEnvironment=null, targetTap=null;
+let steeringStick=null, analogSteer=0, analogDrive=0, thumbnailRenderer=null, thumbnailEnvironment=null, targetTap=null;
 const driveInput = {throttle:0,brake:0,steer:0,action:0,reverse:0};
 let storage; try { storage=window.localStorage; } catch { storage=null; }
 const fleetRead=readFleet(storage,VEHICLES);
@@ -175,18 +175,28 @@ function updateParking(){
 function openParking(){refreshFleet();pauseInput();if(driveStart)stopDrive();if(isComplete(state)&&!currentInstanceId)rememberFinishedCar();homeView();updateUI();updateParking();$('parking-dialog').showModal();}
 function openLiveries(){pauseInput();const template=VEHICLES.find(v=>v.id===currentId);$('livery-options').replaceChildren();for(const livery of template.liveries||[{id:'default',name:'经典涂装',color:template.color}]){const b=document.createElement('button');b.className='livery-option';b.dataset.livery=livery.id;b.setAttribute('aria-pressed',currentLivery===livery.id);const key=queueThumbnail(currentId,livery.id);b.innerHTML=`<div class="placeholder" data-thumbnail="${key}">${template.emoji||'🚗'}</div><span class="livery-swatch" style="background:${livery.color}"></span><strong>${livery.name}</strong>`;b.onclick=()=>{const installed=[...state.installed],instanceId=currentInstanceId;loadVehicle(currentId,{liveryId:livery.id,instanceId,installed});if(instanceId){refreshFleet();if(!currentInstanceId){if(isComplete(state))rememberFinishedCar();}else fleet=changeCarLivery(fleet,currentInstanceId,livery.id,VEHICLES);persistFleet();updateParking();}$('livery-dialog').close();};$('livery-options').append(b);}applyThumbnails();$('livery-dialog').showModal();}
 function setupButtons(){for(const b of document.querySelectorAll('[data-close]'))b.onclick=()=>$(b.dataset.close).close();$('garage').onclick=()=>{pauseInput();if(driveStart)returnToGarage();$('garage-dialog').showModal();};$('help').onclick=()=>{pauseInput();releaseDriving();if(driveState)driveState.speed=0;$('help-dialog').showModal();};$('target').addEventListener('pointerdown',e=>{cameraTween=null;targetTap={id:e.pointerId,part:state.selected,x:e.clientX,y:e.clientY};$('target').setPointerCapture?.(e.pointerId);});$('target').addEventListener('pointerup',e=>{const tap=targetTap;targetTap=null;if(tap&&tap.id===e.pointerId&&tap.part===state.selected&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<24)fitPart(tap.part);});for(const name of ['pointercancel','lostpointercapture'])$('target').addEventListener(name,()=>{targetTap=null;});$('target').onclick=()=>{if(state.selected)fitPart(state.selected);};$('reset').onclick=resetParts;$('parking').onclick=openParking;$('livery').onclick=openLiveries;$('build-another').onclick=()=>{$('parking-dialog').close();$('garage-dialog').showModal();};$('mission-replay').onclick=()=>{if(driveState){restartMission(driveState);syncMissionUI();}};$('home-view').onclick=homeView;$('zoom-in').onclick=()=>{cameraTween=null;distance=clamp(distance*.84,3.3,42);updateCamera();};$('zoom-out').onclick=()=>{cameraTween=null;distance=clamp(distance/.84,3.3,42);updateCamera();};$('drive').onclick=startDrive;$('return-garage').onclick=returnToGarage;$('sound').onclick=()=>{sound.setEnabled(!sound.enabled);updateSoundButton();};for(const d of document.querySelectorAll('dialog'))d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}});
- for(const [id,control] of [['accelerate','throttle'],['brake','brake'],['steer-left','left'],['steer-right','right'],['mission-action','action'],['reverse','reverse']]){const b=$(id);b.addEventListener('contextmenu',e=>e.preventDefault());b.addEventListener('pointerdown',e=>{if(!driveStart)return;e.preventDefault();b.setPointerCapture(e.pointerId);heldControls.set(e.pointerId,control);updateDrivingInput();});const up=e=>{heldControls.delete(e.pointerId);updateDrivingInput();};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);}
- steeringStick=bindSteeringStick($('steering-stick'),value=>{analogSteer=driveStart?value:0;updateDrivingInput();});
+ for(const [id,control] of [['mission-action','action']]){const b=$(id);b.addEventListener('contextmenu',e=>e.preventDefault());b.addEventListener('pointerdown',e=>{if(!driveStart)return;e.preventDefault();b.setPointerCapture(e.pointerId);heldControls.set(e.pointerId,control);updateDrivingInput();});const up=e=>{heldControls.delete(e.pointerId);updateDrivingInput();};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);}
+ steeringStick=bindSteeringStick($('steering-stick'),value=>{analogSteer=driveStart?value.steer:0;analogDrive=driveStart?value.drive:0;updateDrivingInput();});
  $('siren').onclick=()=>{sound.setSiren(!sound.sirenEnabled);updateSirenButton();};
  updateSoundButton();updateSirenButton();
 }
 function updateSirenButton(){const b=$('siren');b.hidden=!sound.hasSiren;b.setAttribute('aria-pressed',String(sound.sirenEnabled));b.setAttribute('aria-label',sound.sirenEnabled?'关闭警笛':'打开警笛');b.innerHTML=`<span aria-hidden="true">◉</span> 警笛${sound.sirenEnabled?'开':'关'}`;}
 function updateSoundButton(){const on=sound.enabled;const label=on?'关闭音乐和音效':'开启音乐和音效';$('sound').setAttribute('aria-label',label);$('sound').setAttribute('aria-pressed',on);$('sound').title=label;$('sound').innerHTML=on?'<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14"/></svg>':'<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6m0-6-5 6"/></svg>';}
-function updateDrivingInput(){const values=new Set(heldControls.values());const has=(name,...keys)=>values.has(name)||keys.some(k=>driveKeys.has(k));driveInput.throttle=has('throttle','arrowup','w')?1:0;driveInput.brake=has('brake','arrowdown','s',' ')?1:0;driveInput.action=has('action','e')?1:0;driveInput.reverse=has('reverse','r')?1:0;const left=has('left','arrowleft','a'),right=has('right','arrowright','d');driveInput.steer=left||right?Number(right)-Number(left):analogSteer;for(const [id,on] of [['accelerate',driveInput.throttle],['brake',driveInput.brake],['steer-left',left],['steer-right',right],['mission-action',driveInput.action],['reverse',driveInput.reverse]])$(id).classList.toggle('pressed',!!on);}
-function releaseDriving(){heldControls.clear();driveKeys.clear();analogSteer=0;steeringStick?.reset();updateDrivingInput();}
+function updateDrivingInput(){
+ const values=new Set(heldControls.values());const has=(name,...keys)=>values.has(name)||keys.some(k=>driveKeys.has(k));
+ driveInput.throttle=has('throttle','arrowup','w')?1:Math.max(0,analogDrive);
+ driveInput.reverse=has('reverse','r')?1:Math.max(0,-analogDrive);
+ // Releasing the stick slows safely to rest, even if steering remains held.
+ driveInput.brake=has('brake','arrowdown','s',' ')?1:(!driveInput.throttle&&!driveInput.reverse ? .45 : 0);
+ driveInput.action=has('action','e')?1:0;
+ const left=has('left','arrowleft','a'),right=has('right','arrowright','d');
+ driveInput.steer=left||right?Number(right)-Number(left):analogSteer;
+ $('mission-action').classList.toggle('pressed',!!driveInput.action);
+}
+function releaseDriving(){heldControls.clear();driveKeys.clear();analogSteer=0;analogDrive=0;steeringStick?.reset();updateDrivingInput();}
 function clearConfetti(){for(const m of confetti){scene.remove(m);m.geometry.dispose();m.material.dispose();}confetti=[];}
 function celebrate(){sound.cheer();clearConfetti();const count=reducedMotion?12:76;for(let i=0;i<count;i++){const m=new THREE.Mesh(new THREE.PlaneGeometry(.12,.23),new THREE.MeshBasicMaterial({color:[0xffd65d,0x63bdad,0xff8d6a,0xffffff,0x89baff][i%5],side:THREE.DoubleSide}));m.position.set((Math.random()-.5)*5,2+Math.random()*2,(Math.random()-.5)*4);m.userData.velocity=new THREE.Vector3((Math.random()-.5)*4,3+Math.random()*3,(Math.random()-.5)*4);m.userData.start=performance.now();scene.add(m);confetti.push(m);}}
-function startDrive(){if(!isComplete(state)||driveStart)return;updateParkedModels();clearTimeout(winTimer);clearSelection();pauseInput();releaseDriving();animations=[];vehicle.parts.forEach(p=>{p.group.position.copy(p.target);p.group.quaternion.copy(p.baseQuaternion);});clearConfetti();cameraTween=null;driveState=createWorldState(currentId);driveStart=performance.now()||1;garage.root.visible=false;road.root.visible=true;setBackdrop(scene,true);camera.far=280;camera.updateProjectionMatrix();document.body.classList.add('driving');$('driving-hud').hidden=false;renderer.domElement.setAttribute('aria-label','三维阳光小镇，自由转向探索，按住油门前进，倒车调整，靠近任务地点按住行动按钮。');sound.setMode('drive');sound.startEngine();updateDriveVehicle(0);updateDriveCamera(true);updateUI();}
+function startDrive(){if(!isComplete(state)||driveStart)return;updateParkedModels();clearTimeout(winTimer);clearSelection();pauseInput();releaseDriving();animations=[];vehicle.parts.forEach(p=>{p.group.position.copy(p.target);p.group.quaternion.copy(p.baseQuaternion);});clearConfetti();cameraTween=null;driveState=createWorldState(currentId);driveStart=performance.now()||1;garage.root.visible=false;road.root.visible=true;setBackdrop(scene,true);camera.far=280;camera.updateProjectionMatrix();document.body.classList.add('driving');$('driving-hud').hidden=false;renderer.domElement.setAttribute('aria-label','三维阳光小镇，摇杆上推前进、下推倒车、左右转向，松手减速，靠近任务地点按住行动按钮。');sound.setMode('drive');sound.startEngine();updateDriveVehicle(0);updateDriveCamera(true);updateUI();}
 function stopDrive(){driveStart=0;releaseDriving();driveState=null;sound.stopEngine();sound.setMode('garage');document.body.classList.remove('driving');$('driving-hud').hidden=true;if(garage)garage.root.visible=true;if(road)road.root.visible=false;if(scene){setBackdrop(scene);lighting?.follow();}if(camera){camera.far=100;camera.updateProjectionMatrix();}if(vehicle){vehicle.group.position.set(0,0,0);vehicle.group.rotation.y=0;vehicle.parts.forEach(p=>{if(p.baseQuaternion)p.group.quaternion.copy(p.baseQuaternion);});}if(renderer)renderer.domElement.setAttribute('aria-label','可触摸操作的三维车库。单指旋转，双指移动和缩放，拖动零件进行拼装。');cameraDirty=true;}
 function returnToGarage(){openParking();}
 function updateParkedModels(){

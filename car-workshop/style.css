@@ -61,3 +61,9 @@ body{background:#c5e9ee}button:focus-visible,input:focus-visible{outline:3px sol
  .steering-stick{width:132px;height:132px}.pedal-controls{grid-template-columns:76px 90px;grid-template-rows:44px 76px;gap:10px}
  .dashboard{top:auto;bottom:20px}.siren-button{top:-54px;min-height:44px}.stick-caption{bottom:8px}
 }
+
+/* Unified two-axis driving: a single large thumb target, no separate pedals. */
+.stick-up,.stick-down{position:absolute;left:0;right:0;text-align:center;font-size:12px;font-weight:800;color:#edf6fa;pointer-events:none}.stick-up{top:12px}.stick-down{bottom:12px}.stick-help{margin:0 0 16px;padding:10px 13px;border-radius:16px;background:#fffdf2e8;color:#28564f;font-size:13px;line-height:1.8;box-shadow:0 4px 16px #244b4c16}.steering-stick:focus-visible{outline:3px solid #157c96;outline-offset:5px}
+@media(max-width:550px){.steering-stick{width:148px;height:148px}.stick-help{font-size:11px;padding:8px;margin-bottom:16px}.drive-controls{gap:8px}}
+@media(max-width:350px){.steering-stick{width:140px;height:140px}.stick-help{font-size:10px;padding:7px}}
+@media(max-height:550px) and (min-width:551px){.stick-help{margin-right:10px}}
