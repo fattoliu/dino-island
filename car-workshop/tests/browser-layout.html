@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Driving layout QA</title>
+<style>body{font:16px system-ui;margin:20px;background:#edf1f5;color:#173e53}iframe{border:1px solid #678;display:block;background:#55b2e1}article{margin:30px 0}pre{white-space:pre-wrap}.pass{color:#176c32}.fail{color:#a21a24}</style>
+<h1>Driving layout QA</h1><p>Static UI fixtures from the current game markup and stylesheet. No gameplay scripts or saved-data writes. These checks do not simulate physical devices.</p><h2 id="status">RUNNING</h2><pre id="results"></pre><main id="frames"></main>
+<script type="module">
+const sizes=[[320,568],[390,844],[768,1024],[844,390],[1440,900]],report=[];
+try{
+ const response=await fetch('../index.html');if(!response.ok)throw Error('Cannot load game markup');
+ const source=(await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace('<head>',`<head><base href="${new URL('../',location.href).href}">`);
+ for(const [width,height] of sizes){
+  const article=document.createElement('article');article.innerHTML=`<h2>${width} × ${height}</h2>`;
+  const frame=document.createElement('iframe');frame.width=width;frame.height=height;frame.title=`Driving UI at ${width} by ${height}`;article.append(frame);document.querySelector('#frames').append(article);
+  await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=reject;frame.srcdoc=source;});
+  const d=frame.contentDocument;d.body.classList.add('driving');d.getElementById('driving-hud').hidden=false;d.getElementById('siren').hidden=false;d.getElementById('siren').textContent='警笛开';d.getElementById('loading')?.remove();
+  d.getElementById('mission-title').textContent='友善巡逻';d.getElementById('mission-instruction').textContent='追上带黄色标记的淘气小车';d.getElementById('mission-progress').textContent='1 / 2 · 距目标 33 米';
+  await new Promise(resolve=>frame.contentWindow.requestAnimationFrame(()=>frame.contentWindow.requestAnimationFrame(resolve)));
+  const ids=['steering-stick','accelerate','brake','reverse','siren','return-garage','mission-action'];
+  const bounds=ids.map(id=>{const r=d.getElementById(id).getBoundingClientRect();return{id,x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};});
+  const errors=[];for(const b of bounds){if(b.width<44||b.height<44)errors.push(`${b.id} below 44px`);if(b.x<0||b.y<0||b.right>width+.5||b.bottom>height+.5)errors.push(`${b.id} outside viewport`);}
+  const pedals=bounds.filter(b=>['steering-stick','accelerate','brake','reverse','siren'].includes(b.id));for(let i=0;i<pedals.length;i++)for(let j=i+1;j<pedals.length;j++){const a=pedals[i],b=pedals[j];if(Math.min(a.right,b.right)>Math.max(a.x,b.x)&&Math.min(a.bottom,b.bottom)>Math.max(a.y,b.y))errors.push(`${a.id} overlaps ${b.id}`);}
+  if(d.documentElement.scrollWidth>width)errors.push('horizontal overflow');report.push({width,height,pass:errors.length===0,errors,bounds});
+ }
+ const failures=report.filter(r=>!r.pass);document.getElementById('status').textContent=`${failures.length?'FAIL':'PASS'}: ${report.length-failures.length}/${report.length} viewport checks`;document.getElementById('status').className=failures.length?'fail':'pass';document.getElementById('results').textContent=JSON.stringify(report,null,2);
+}catch(e){document.getElementById('status').textContent='FAIL';document.getElementById('results').textContent=e.stack||e;}
+</script></html>

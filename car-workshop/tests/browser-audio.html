@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vehicle audio signal QA</title>
+<style>
+body{font:16px/1.5 system-ui,sans-serif;margin:24px auto;padding:0 16px;max-width:960px;background:#f3f7fa;color:#183047}h1{font-size:26px}#status{font-weight:800;padding:12px;background:#fff;border-radius:8px}.pass{color:#087344}.fail{color:#b32323}li{margin:10px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#fff;padding:16px;border-radius:8px;font-size:13px}summary{cursor:pointer}
+</style>
+<h1>Vehicle audio: real browser signal tests</h1>
+<p>This page automatically renders the production audio graph using OfflineAudioContext. It never plays sound, stores data, or requests external assets. Reload to repeat.</p>
+<p id="status" role="status">RUNNING: loading audio module…</p>
+<ul id="checks"></ul>
+<details open><summary>Measured results</summary><pre id="results">Waiting…</pre></details>
+<p>Method: isolated sirens, eight representative engines, output silence after mute and siren-off. Offline rendering is paused every 160 ms of audio time to refill the normal siren scheduler, independent of wall-clock timers. Measurements cover actual PCM samples after the production master gain and compressor. This tests signal behavior, not subjective sound quality or device speakers.</p>
+<script type="module">
+const status=document.getElementById('status'), checks=document.getElementById('checks'), results=document.getElementById('results');
+const report={sampleRate:24000,sirens:{},engines:{},silence:{},checks:[]};
+const check=(name,pass,detail)=>{
+  report.checks.push({name,pass,detail});
+  const li=document.createElement('li'); li.className=pass?'pass':'fail'; li.textContent=`${pass?'PASS':'FAIL'}: ${name} — ${detail}`; checks.append(li);
+  results.textContent=JSON.stringify(report,null,2);
+};
+const measure=(data,start,end)=>{
+  const first=Math.round(start*report.sampleRate), last=Math.round(end*report.sampleRate);
+  let square=0,peak=0,crossings=0,finite=true;
+  for(let i=first;i<last;i++) {const x=data[i];finite=finite&&Number.isFinite(x);square+=x*x;peak=Math.max(peak,Math.abs(x));if(i>first&&data[i-1]<0&&x>=0)crossings++;}
+  return {rms:Math.sqrt(square/(last-first)),peak,frequencyHz:crossings/(end-start),finite};
+};
+const spectralPeak=data=>{
+  // Direct spectrum on a settled engine segment, not oscillator parameter inspection.
+  const start=Math.round(1.5*report.sampleRate), count=4096, stride=2;
+  let bestHz=0,bestPower=-1;
+  for(let hz=18;hz<=380;hz++) {
+    const step=2*Math.PI*hz*stride/report.sampleRate;
+    let real=0,imag=0;
+    for(let i=0;i<count;i++) {const value=data[start+i*stride]*(.5-.5*Math.cos(2*Math.PI*i/(count-1)));real+=value*Math.cos(step*i);imag+=value*Math.sin(step*i);}
+    const power=real*real+imag*imag;if(power>bestPower){bestPower=power;bestHz=hz;}
+  }
+  return bestHz;
+};
+try {
+  const {WorkshopAudio}=await import('../audio.js?v=5');
+  if(!globalThis.OfflineAudioContext) throw new Error('OfflineAudioContext is unavailable in this browser.');
+  async function render(id,{isolate='siren',seconds=3.5,change=null}={}) {
+    const context=new OfflineAudioContext(1,Math.ceil(seconds*report.sampleRate),report.sampleRate);
+    const audio=new WorkshopAudio({AudioContext:function(){return context;}});
+    const clearTimer=()=>{if(audio._timer!==null)clearInterval(audio._timer);audio._timer=null;};
+    const isolateSignal=()=>{if(isolate!=='all')audio._stopTag('music');if(isolate==='siren')audio._stopTag('engine');};
+    audio.setVehicle(id);audio.setMode('drive');
+    if(isolate==='engine')audio.setSiren(false);
+    // Queue intent before unlock to avoid common starter Foley masking engine classes.
+    audio.startEngine();audio.unlock();audio.updateEngine(.6,1);clearTimer();isolateSignal();
+    const checkpoints=[];
+    for(let time=.16;time<seconds-.02;time+=.16)checkpoints.push(time);
+    if(change)checkpoints.push(change.at);
+    checkpoints.sort((a,b)=>a-b);
+    let changed=false;
+    const pauses=checkpoints.filter((t,i,a)=>!i||t-a[i-1]>.001).map(time=>context.suspend(time).then(async()=>{
+      if(change&&!changed&&context.currentTime>=change.at-.006){changed=true;change.run(audio);}
+      audio._schedule();clearTimer();isolateSignal();
+      await context.resume();
+    }));
+    try {
+      const buffer=await context.startRendering();await Promise.all(pauses);
+      return buffer.getChannelData(0).slice();
+    } finally {clearTimer();audio.dispose();}
+  }
+  const windows={police:[[.08,.18],[.3,.4],[.52,.62]],ambulance:[[.08,.18],[.5,.6]],fire:[[.1,.2],[1.3,1.4],[2.8,2.9]]};
+  for(const id of ['police','ambulance','fire']) {
+    status.textContent=`RUNNING: rendering ${id} siren…`;
+    const data=await render(id), samples=windows[id].map(([a,b])=>measure(data,a,b));
+    const continuation=measure(data,3,3.1);report.sirens[id]={samples,continuation};
+    check(`${id} produces finite audible samples`,samples.every(m=>m.finite&&m.rms>.001&&m.peak<1),JSON.stringify(samples.map(m=>({rms:+m.rms.toFixed(4),hz:Math.round(m.frequencyHz)}))));
+    check(`${id} continues across scheduler refills`,continuation.finite&&continuation.rms>.001,`RMS at 3 seconds: ${continuation.rms.toFixed(5)}`);
+  }
+  const p=report.sirens.police.samples,a=report.sirens.ambulance.samples,f=report.sirens.fire.samples;
+  check('Police has a fast rising/falling sweep',p[1].frequencyHz>p[0].frequencyHz+250&&p[1].frequencyHz>p[2].frequencyHz+250,'Measured high midpoint exceeds both ends by over 250 Hz.');
+  check('Ambulance alternates 960 / 640 Hz',Math.abs(a[0].frequencyHz-960)<40&&Math.abs(a[1].frequencyHz-640)<40,'Two steady notes, within 40 Hz of their targets.');
+  check('Fire engine has a slower lower sweep',f[1].frequencyHz>f[0].frequencyHz+350&&f[1].frequencyHz>f[2].frequencyHz+300&&f[1].frequencyHz<p[1].frequencyHz-300,'Low start, higher at 1.35 s, low again at 2.85 s.');
+  const representatives=[['taxi','car',122],['bmw','sport',233],['ferrari','supercar',288],['gclass','suv',100],['truck','diesel',73.8],['van','utility',97.4],['tractor','tractor',55],['compact','compact',153]];
+  for(const [id,engineClass,expectedHz] of representatives) {
+    status.textContent=`RUNNING: rendering ${engineClass} engine (${id})…`;
+    const data=await render(id,{isolate:'engine',seconds:2}), sample=measure(data,1.5,1.85), peakHz=spectralPeak(data);
+    report.engines[engineClass]={vehicle:id,...sample,spectralPeakHz:peakHz,expectedFundamentalHz:expectedHz};
+    check(`${engineClass} engine has its own rendered pitch`,sample.finite&&sample.rms>.001&&sample.peak<1&&Math.abs(peakHz-expectedHz)<3,`Dominant frequency ${peakHz} Hz; expected ${expectedHz} Hz; RMS ${sample.rms.toFixed(5)}.`);
+  }
+  const peaks=Object.values(report.engines).map(e=>e.spectralPeakHz);
+  check('All eight engine classes differ',new Set(peaks).size===8,`Measured peaks: ${peaks.join(', ')} Hz.`);
+  for(const [name,isolate,run] of [['Global mute','all',audio=>audio.setEnabled(false)],['Siren off','siren',audio=>audio.setSiren(false)]]) {
+    status.textContent=`RUNNING: checking ${name.toLowerCase()}…`;
+    const data=await render('police',{isolate,seconds:1.5,change:{at:.5,run}});
+    const before=measure(data,.1,.2),after=measure(data,.65,1.4);report.silence[name]={before,after};
+    check(`${name} silences already-active output`,before.rms>.001&&after.finite&&after.peak<.000001,`Before RMS ${before.rms.toFixed(5)}; after peak ${after.peak.toExponential(2)}.`);
+  }
+  const failures=report.checks.filter(c=>!c.pass);
+  status.textContent=`${failures.length?'FAIL':'PASS'}: ${report.checks.length-failures.length}/${report.checks.length} signal checks passed.`;
+  status.className=failures.length?'fail':'pass';document.title=`${failures.length?'FAIL':'PASS'} — Vehicle audio signal QA`;
+} catch(error) {
+  check('Harness completed',false,error.stack||String(error));status.textContent='FAIL: signal test could not complete. See results below.';status.className='fail';document.title='FAIL — Vehicle audio signal QA';
+}
+results.textContent=JSON.stringify(report,null,2);
+</script>
+</html>

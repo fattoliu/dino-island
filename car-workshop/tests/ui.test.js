@@ -22,3 +22,5 @@ test('thumbnails use the display tone transform and their own GPU environment',(
  assert.match(app,/configureRenderer\(thumbnailRenderer\)/);assert.match(app,/thumbnailEnvironment=createEnvironment\(thumbnailRenderer\)/);
  assert.doesNotMatch(app,/readRenderTargetPixels/);assert.match(app,/thumbScene\.environment=thumbnailEnvironment\.texture/);
 });
+
+test('hand target updates immediately and confirms a captured tap without a moving click race',()=>{assert.match(app,/updateUI\(\);projectTarget\(\)/);assert.match(app,/tap\.part===state\.selected/);assert.match(app,/fitPart\(tap\.part\)/);assert.match(app,/targetTap=null/);});
