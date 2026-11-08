@@ -98,8 +98,8 @@ export class SoftwareRenderer {
       v[0]=m[0]*x+m[4]*y+m[8]*z+m[12];v[1]=m[1]*x+m[5]*y+m[9]*z+m[13];v[2]=m[2]*x+m[6]*y+m[10]*z+m[14];v[3]=m[3]*x+m[7]*y+m[11]*z+m[15];
       if(norm&&!mat.isMeshBasicMaterial){const nx=norm.getX(i),ny=norm.getY(i),nz=norm.getZ(i);let ax=n[0]*nx+n[3]*ny+n[6]*nz,ay=n[1]*nx+n[4]*ny+n[7]*nz,az=n[2]*nx+n[5]*ny+n[8]*nz;const inv=1/(Math.hypot(ax,ay,az)||1);ax*=inv;ay*=inv;az*=inv;
         const dot=ax*L.x+ay*L.y+az*L.z;
-        v[4]=.47+.12*(ay*.5+.5)+.42*Math.max(0,mat.side===THREE.DoubleSide?Math.abs(dot):dot);
-        v[5]=Math.pow(Math.max(0,ax*H.x+ay*H.y+az*H.z),shininess)*(.055+(mat.metalness||0)*.2)*(1-rough*.65);
+        v[4]=.28+.10*(ay*.5+.5)+.62*Math.max(0,mat.side===THREE.DoubleSide?Math.abs(dot):dot);
+        v[5]=Math.pow(Math.max(0,ax*H.x+ay*H.y+az*H.z),shininess)*(.025+(mat.metalness||0)*.09)*(1-rough*.65);
       }else{v[4]=1;v[5]=0;}
       v[6]=uv?uv.getX(i):0;v[7]=uv?uv.getY(i):0;codes[i]=outcode(v);
     }

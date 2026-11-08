@@ -1,11 +1,30 @@
 // Original, entirely procedural score and Foley. No recordings or network assets.
 const clamp = n => Math.max(0, Math.min(1, Number(n) || 0));
 const hz = midi => 440 * 2 ** ((midi - 69) / 12);
+// Each class has its own idle/rev range, harmonic balance and exhaust brightness.
+const ENGINES = {
+  car: { idle: 38, rev: 100, load: 24, cutoff: 420, volume: .095, waves: ['sawtooth','triangle','triangle'], harmonics: [1,2,3.02], levels: [.6,.3,.12] },
+  sport: { idle: 65, rev: 210, load: 42, cutoff: 780, volume: .08, waves: ['sawtooth','sawtooth','triangle'], harmonics: [1,2.01,4], levels: [.5,.26,.16] },
+  supercar: { idle: 82, rev: 260, load: 50, cutoff: 1000, volume: .075, waves: ['sawtooth','triangle','sawtooth'], harmonics: [1,3,5.02], levels: [.48,.3,.12] },
+  suv: { idle: 29, rev: 85, load: 20, cutoff: 330, volume: .11, waves: ['sawtooth','triangle','square'], harmonics: [1,1.5,3.01], levels: [.6,.3,.08] },
+  diesel: { idle: 24, rev: 58, load: 15, cutoff: 250, volume: .12, waves: ['sawtooth','square','triangle'], harmonics: [1,2.03,4], levels: [.6,.17,.2] },
+  utility: { idle: 32, rev: 74, load: 21, cutoff: 380, volume: .1, waves: ['triangle','sawtooth','triangle'], harmonics: [1,2,3.04], levels: [.6,.32,.14] },
+  tractor: { idle: 19, rev: 40, load: 12, cutoff: 230, volume: .12, waves: ['square','sawtooth','triangle'], harmonics: [1,1.51,3], levels: [.45,.38,.2] },
+  compact: { idle: 50, rev: 125, load: 28, cutoff: 600, volume: .075, waves: ['triangle','sawtooth','triangle'], harmonics: [1,2.01,4], levels: [.6,.2,.1] }
+};
+const VEHICLE_ENGINES = {
+  gclass:'suv', landcruiser:'suv', bmw:'sport', ferrari:'supercar', truck:'diesel',
+  fire:'diesel', police:'sport', taxi:'car', crane:'diesel', excavator:'tractor',
+  ambulance:'utility', bus:'diesel', schoolbus:'diesel', minibus:'utility', pickup:'suv',
+  van:'utility', camper:'utility', garbage:'diesel', mixer:'diesel', tractor:'tractor',
+  compact:'compact', icecream:'utility'
+};
 export class WorkshopAudio {
   constructor({ AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext } = {}) {
     this.enabled = true; this.context = null; this.mode = 'garage';
     this._Context = AudioContext; this._hidden = false; this._disposed = false;
     this._voices = new Set(); this._timer = null; this._engine = null;
+    this.vehicleId = 'compact'; this._sirenEnabled = false; this._nextSiren = null;
     this._engineWanted = false; this._speed = 0; this._throttle = 0; this._beat = 0;
   }
   unlock() {
@@ -42,6 +61,22 @@ export class WorkshopAudio {
     if (mode !== 'garage' && mode !== 'drive') return;
     this.mode = mode;
     if (mode === 'garage') this.stopEngine();
+    else this._syncSiren();
+  }
+  get hasSiren() { return ['police', 'ambulance', 'fire'].includes(this.vehicleId); }
+  get sirenEnabled() { return this.hasSiren && this._sirenEnabled; }
+  setVehicle(id) {
+    if (this._disposed || id === this.vehicleId) return;
+    this.vehicleId = Object.hasOwn(VEHICLE_ENGINES, id) ? id : 'compact';
+    this._sirenEnabled = this.hasSiren;
+    this._dropSiren(); this._dropEngine();
+    if (this._active() && this._engineWanted) this._makeEngine(false);
+    this._syncSiren();
+  }
+  setSiren(enabled) {
+    this._sirenEnabled = this.hasSiren && !!enabled;
+    if (!this._sirenEnabled) this._dropSiren();
+    else this._syncSiren();
   }
   setHidden(value) {
     this._hidden = !!value;
@@ -59,6 +94,7 @@ export class WorkshopAudio {
       this._timer.unref?.();
     }
     if (this._engineWanted && !this._engine) this._makeEngine(false);
+    this._syncSiren();
   }
   _track(source, nodes, tag) {
     const voice = { source, nodes, tag }; this._voices.add(voice);
@@ -87,6 +123,7 @@ export class WorkshopAudio {
   }
   _schedule() {
     if (!this._active()) return;
+    this._syncSiren();
     const c = this.context, step = 60 / (this.mode === 'drive' ? 112 : 96) / 2;
     if (this._next < c.currentTime - .3) this._next = c.currentTime + .02;
     while (this._next < c.currentTime + .28) {
@@ -139,10 +176,10 @@ export class WorkshopAudio {
   startEngine() {
     if (this._disposed || this._engineWanted) return;
     this._engineWanted = true;
-    if (this._active()) this._makeEngine(true);
+    if (this._active()) { this._makeEngine(true); this._syncSiren(); }
   }
   _makeEngine(starter) {
-    const c = this.context, t = c.currentTime;
+    const c = this.context, t = c.currentTime, profile = ENGINES[VEHICLE_ENGINES[this.vehicleId]];
     if (starter) {
       // Starter motor chatter, ignition catch and initial rev.
       for (let i = 0; i < 8; i++) {
@@ -151,16 +188,16 @@ export class WorkshopAudio {
       }
       this._tone(58, t + .53, .75, .18, 'triangle', 125, 'engine');
     }
-    const gain = c.createGain(), filter = c.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 520;
+    const gain = c.createGain(), filter = c.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = profile.cutoff;
     gain.gain.setValueAtTime(.0001, t); gain.gain.linearRampToValueAtTime(.11, t + (starter ? .8 : .18));
     filter.connect(gain); gain.connect(this._master);
-    const oscillators = [1,2,3.02].map((harmonic, i) => {
-      const o = c.createOscillator(), level = c.createGain(); o.type = i === 0 ? 'sawtooth' : 'triangle';
-      o.frequency.value = 38 * harmonic; level.gain.value = [.6,.3,.12][i];
+    const oscillators = profile.harmonics.map((harmonic, i) => {
+      const o = c.createOscillator(), level = c.createGain(); o.type = profile.waves[i];
+      o.frequency.value = profile.idle * harmonic; level.gain.value = profile.levels[i];
       o.connect(level); level.connect(filter); this._track(o, [level], 'engine'); o.start(t);
       return { o, harmonic };
     });
-    this._engine = { gain, filter, oscillators };
+    this._engine = { gain, filter, oscillators, profile };
     this.updateEngine(this._speed, this._throttle);
   }
   updateEngine(speedRatio, throttle = 0) {
@@ -168,11 +205,42 @@ export class WorkshopAudio {
     if (!this._engine || !this._active()) return;
     const t = this.context.currentTime, e = this._engine;
     // Speed makes pitch rise continuously; throttle adds the characteristic loaded rev.
-    const fundamental = 32 + this._speed * 105 + this._throttle * 25;
+    const p = e.profile;
+    const fundamental = p.idle + this._speed * p.rev + this._throttle * p.load;
     e.oscillators.forEach(({ o, harmonic }) => o.frequency.setTargetAtTime(fundamental * harmonic, t, .13));
-    e.filter.frequency.setTargetAtTime(360 + this._speed * 950 + this._throttle * 550, t, .12);
-    e.gain.gain.setTargetAtTime(.095 + this._throttle * .055 + this._speed * .025, t + .05, .16);
+    e.filter.frequency.setTargetAtTime(p.cutoff + this._speed * p.cutoff * 2 + this._throttle * 550, t, .12);
+    e.gain.gain.setTargetAtTime(p.volume + this._throttle * .045 + this._speed * .02, t + .05, .16);
   }
+  _syncSiren() {
+    if (!this._active() || this.mode !== 'drive' || !this._engineWanted || !this.sirenEnabled) return;
+    const now = this.context.currentTime;
+    if (this._nextSiren === null || this._nextSiren < now - .3) this._nextSiren = now + .01;
+    while (this._nextSiren < now + .3) {
+      const t = this._nextSiren;
+      if (this.vehicleId === 'ambulance') {
+        // Familiar discrete nee-naw: no pitch glide between the two notes.
+        this._tone(960, t, .4, .14, 'square', null, 'siren');
+        this._tone(640, t + .42, .4, .14, 'square', null, 'siren');
+        this._nextSiren += .84;
+      } else {
+        const fire = this.vehicleId === 'fire', duration = fire ? 3.2 : .72;
+        const low = fire ? 280 : 620, high = fire ? 920 : 1480;
+        const c = this.context, source = c.createOscillator(), gain = c.createGain();
+        source.type = fire ? 'sawtooth' : 'triangle';
+        source.frequency.setValueAtTime(low, t);
+        source.frequency.linearRampToValueAtTime(high, t + duration * .48);
+        source.frequency.linearRampToValueAtTime(low, t + duration);
+        gain.gain.setValueAtTime(.0001, t);
+        gain.gain.linearRampToValueAtTime(fire ? .11 : .2, t + .02);
+        gain.gain.setValueAtTime(fire ? .11 : .2, t + duration - .025);
+        gain.gain.linearRampToValueAtTime(.0001, t + duration);
+        source.connect(gain); gain.connect(this._master);
+        this._track(source, [gain], 'siren'); source.start(t); source.stop(t + duration + .01);
+        this._nextSiren += duration;
+      }
+    }
+  }
+  _dropSiren() { this._stopTag('siren'); this._nextSiren = null; }
   _stopTag(tag) {
     for (const v of [...this._voices]) if (!tag || v.tag === tag) {
       try { v.source.stop(); } catch {}
@@ -185,10 +253,10 @@ export class WorkshopAudio {
     this._stopTag('engine');
     if (this._engine) { this._engine.gain.disconnect(); this._engine.filter.disconnect(); this._engine = null; }
   }
-  stopEngine() { this._engineWanted = false; this._dropEngine(); }
+  stopEngine() { this._engineWanted = false; this._dropSiren(); this._dropEngine(); }
   _silence() {
     if (this._timer !== null) clearInterval(this._timer);
-    this._timer = null; this._dropEngine(); this._stopTag();
+    this._timer = null; this._dropSiren(); this._dropEngine(); this._stopTag();
   }
   dispose() {
     if (this._disposed) return;

@@ -1,10 +1,10 @@
 {
   "name": "little-car-workshop",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js"
   },
-  "description": "Original rounded 3D toy vehicles, persistent collections and an explorable mission town."
+  "description": "Detailed 3D vehicles, directional lighting, vehicle-specific audio and analog touch driving."
 }

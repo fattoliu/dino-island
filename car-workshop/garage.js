@@ -7,9 +7,9 @@ export function buildGarage(scene) {
   const mat = (color, roughness=.65, metalness=0) => {
     const m = new THREE.MeshStandardMaterial({color, roughness, metalness}); resources.push(m); return m;
   };
-  const concrete=mat('#bedde5', .94), seam=mat('#a4cbd8'), navy=mat('#28658a',.46,.3), teal=mat('#31b6d9',.42,.25);
-  const cream=mat('#fff1ce'), yellow=mat('#ffd43b',.46), black=mat('#273239'), metal=mat('#aebcc0',.32,.7);
-  const rubber=mat('#253033',.92), red=mat('#ff7656',.42), wood=mat('#f2bd68'), white=mat('#fffdf0'), blue=mat('#61c9ff');
+  const concrete=mat('#6b9eae', .94), seam=mat('#527e90'), navy=mat('#173e60',.46,.3), teal=mat('#008daf',.42,.25);
+  const cream=mat('#e5dbc1'), yellow=mat('#ffbf13',.46), black=mat('#273239'), metal=mat('#aebcc0',.32,.7);
+  const rubber=mat('#253033',.92), red=mat('#ed4d30',.42), wood=mat('#f2bd68'), white=mat('#fffdf0'), blue=mat('#168ed5');
   const glow=new THREE.MeshStandardMaterial({color:'#fff5d6',emissive:'#fff1bf',emissiveIntensity:1.3,roughness:.3}); resources.push(glow);
   const backWall=cream.clone(), backTrim=teal.clone(); resources.push(backWall,backTrim);
   const glass=new THREE.MeshStandardMaterial({color:'#9fced3',roughness:.25,metalness:.08,transparent:true,opacity:.45}); resources.push(glass);
@@ -18,11 +18,11 @@ export function buildGarage(scene) {
     g.applyMatrix4(matrix); if(!batches.has(m))batches.set(m,[]); batches.get(m).push(g); return g;
   }
   const box=(m,x,y,z,w,h,d,ry=0)=>put(new THREE.BoxGeometry(w,h,d),m,x,y,z,0,ry);
-  // Soft toy-like edges on furniture, while tiny structural details remain inexpensive.
+  // Small bevels keep broad, crisp cabinet faces and catch the key light.
   function roundBox(m,x,y,z,w,h,d,r=.12) {
-    r=Math.min(r,w/3,h/3,d/3);const shape=new THREE.Shape();
+    r=Math.min(r*.22,.035,w/3,h/3,d/3);const shape=new THREE.Shape();
     shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);shape.lineTo(w/2,h/2-r);shape.quadraticCurveTo(w/2,h/2,w/2-r,h/2);shape.lineTo(-w/2+r,h/2);shape.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r);shape.lineTo(-w/2,-h/2+r);shape.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
-    const g=new THREE.ExtrudeGeometry(shape,{depth:d-2*r,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:r*.5,bevelThickness:r,curveSegments:3});g.translate(0,0,-d/2+r);return put(g,m,x,y,z);
+    const g=new THREE.ExtrudeGeometry(shape,{depth:d-2*r,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:r*.5,bevelThickness:r,curveSegments:3});g.translate(0,0,-d/2+r);return put(g,m,x,y,z);
   }
   const cyl=(m,x,y,z,r,h,rx=0,rz=0)=>put(new THREE.CylinderGeometry(r,r,h,16),m,x,y,z,rx,0,rz);
   const torus=(m,x,y,z,r,t,rx=0,ry=0)=>put(new THREE.TorusGeometry(r,t,8,24),m,x,y,z,rx,ry);
@@ -42,7 +42,7 @@ export function buildGarage(scene) {
   box(concrete,0,-.13,0,27,.25,25);
   for(let x=-12;x<=12;x+=3)box(seam,x,.001,0,.018,.007,24);
   for(let z=-12;z<=12;z+=3)box(seam,0,.002,z,26,.007,.018);
-  const bay=mat('#86cddd',.9);roundBox(bay,0,.004,0,9.4,.009,6.5);
+  const bay=mat('#387e96',.9);roundBox(bay,0,.004,0,9.4,.009,6.5);
   // Paint corner marks and short, alternating hazard bars.
   for(const s of [-1,1]) {
     box(yellow,0,.015,s*3.35,9.8,.014,.09);
@@ -69,7 +69,7 @@ export function buildGarage(scene) {
     for(let dx=-2.4;dx<=2.4;dx+=1.6)box(cream,x+dx,3.25,-10.88,.07,2.03,.06);
     box(white,x,2.12,-10.84,6.9,.12,.38);
   }
-  sign('小小车库',0,3.8,-11.11,5,1.05);sign('拼一拼 · 开一开 · 再来一辆',0,2.92,-11.1,5,.35,'#fff1ce','#31b6d9');
+  sign('小小车库',0,3.8,-11.11,5,1.05);sign('拼一拼 · 开一开 · 再来一辆',0,2.92,-11.1,5,.35,'#e5dbc1','#008daf');
   // High steel roof trusses fade above the player so they never obscure assembly.
   const roofMats = [navy.clone(),teal.clone(),metal.clone(),glow.clone()];resources.push(...roofMats);
   const [roofNavy,roofTeal,roofMetal,roofGlow]=roofMats;
@@ -116,7 +116,7 @@ export function buildGarage(scene) {
   for(const x of [8,9.2])for(const z of [6.53,7.07])cyl(rubber,x,.14,z,.13,.09,Math.PI/2);
   // Fire extinguisher and safety station.
   cyl(red,-11.7,1.12,-10.7,.16,.68);cyl(metal,-11.7,1.5,-10.7,.06,.1);box(black,-11.7,1.59,-10.7,.29,.04,.07);
-  sign('+',-11.7,2,-10.74,.48,.48,'#31b6d9');sign('01',-10.4,1.6,-10.79,.7,.45,'#ffd43b','#28658a');
+  sign('+',-11.7,2,-10.74,.48,.48,'#008daf');sign('01',-10.4,1.6,-10.79,.7,.45,'#ffbf13','#173e60');
   // Traffic cones sit well outside the play area.
   for(const [x,z] of [[-10,7],[10,8],[-11,8.2]]) {
     box(black,x,.045,z,.49,.09,.49);put(new THREE.ConeGeometry(.19,.65,16),red,x,.4,z);

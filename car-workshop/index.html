@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#35b8f2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="伴着音乐亲手拼装各式汽车，再开进阳光小镇完成救护、工程、公交和赛车等任务。"><title>小小车库 · 3D 汽车工坊</title><link rel="stylesheet" href="./style.css?v=4">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#35b8f2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="伴着音乐亲手拼装各式汽车，再开进阳光小镇完成救护、工程、公交和赛车等任务。"><title>小小车库 · 3D 汽车工坊</title><link rel="stylesheet" href="./style.css?v=5">
 </head>
 <body>
 <main id="scene" aria-label="三维汽车拼装车库"><div id="loading"><div class="loading-mark">⚙</div><strong>打开车库...</strong></div></main>
@@ -17,7 +17,11 @@
   <div class="drive-heading"><button id="return-garage" class="return-button">‹ 回停车场</button><div class="road-label"><strong>阳光小镇</strong><span>自由探索 · 开去做个小任务</span></div></div>
   <div class="dashboard"><span class="lap-label">小镇 <b id="lap-count">1</b></span><strong><span id="speed">0</span><small>km/h</small></strong><span class="dashboard-dot"></span></div>
   <div class="mission-panel"><div class="mission-copy"><strong id="mission-title">小镇任务</strong><span id="mission-instruction">开着你的小车，探索阳光小镇</span><span id="mission-progress"></span></div><button id="mission-action" hidden>开始行动</button><button id="mission-replay" hidden>再玩一次</button></div><div class="town-map-wrap"><canvas id="town-map" width="180" height="180" role="img" aria-label="小镇导航图：蓝色箭头是你，黄色圆点是任务地点"></canvas><span>蓝箭头是你 · 黄点是目标</span></div><div class="drive-controls">
-   <div class="steering-controls" aria-label="方向"><button id="steer-left" class="steer-button" aria-label="向左转向">◀</button><button id="steer-right" class="steer-button" aria-label="向右转向">▶</button></div>
+   <div class="steering-controls" aria-label="方向">
+    <button id="siren" class="siren-button" hidden aria-label="打开警笛" aria-pressed="false"><span aria-hidden="true">◉</span> 警笛</button>
+    <div id="steering-stick" class="steering-stick" role="slider" tabindex="0" aria-label="方向摇杆，左右拖动转向，也可使用键盘左右方向键" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0" aria-valuetext="直行" aria-orientation="horizontal"><span class="stick-track" aria-hidden="true">‹<span>›</span></span><span class="stick-knob" aria-hidden="true">↔</span><span class="stick-caption" aria-hidden="true">方向</span></div>
+    <button id="steer-left" hidden aria-label="向左转向">◀</button><button id="steer-right" hidden aria-label="向右转向">▶</button>
+   </div>
    <div class="pedal-controls"><button id="reverse" class="reverse-button" aria-label="按住倒车">倒车</button><button id="brake" class="pedal brake" aria-label="按住刹车"><span>▰</span><b>刹车</b></button><button id="accelerate" class="pedal accelerator" aria-label="按住油门前进"><span>↑</span><b>油门</b></button></div>
   </div>
  </section>
@@ -26,6 +30,6 @@
 <dialog id="garage-dialog"><div class="dialog-header"><div><small>每个模板，都能拼出新的小汽车</small><h1>汽车模板库</h1></div><button class="dialog-close" data-close="garage-dialog" aria-label="关闭车型选择">×</button></div><div class="catalog-toolbar"><label class="search-label" for="catalog-search">找车型</label><input id="catalog-search" type="search" placeholder="搜索车型或车系" autocomplete="off"><div id="catalog-filters" role="tablist" aria-label="车型分类"></div></div><div id="vehicle-grid"></div><p class="catalog-note">原创拼装模型 · 车型外形参考 · 非品牌官方模型</p></dialog>
 <dialog id="parking-dialog"><div class="dialog-header"><div><small>每次完成，都是一辆新的收藏</small><h1>我的停车场</h1></div><button class="dialog-close" data-close="parking-dialog" aria-label="关闭停车场">×</button></div><p id="parking-empty" class="parking-empty"><span class="empty-parking-symbol" aria-hidden="true">P</span><strong>这里留着你的小车位</strong>拼好一辆车，就可以停进来。<br>同一个模板，也能拼出不同涂装！</p><p id="save-status" class="save-status" role="status"></p><div id="parking-grid"></div><button id="build-another" class="primary">＋ 再拼一辆新车</button></dialog>
 <dialog id="livery-dialog"><div class="dialog-header"><div><small>给这款车，选一个喜欢的样子</small><h1>缤纷涂装</h1></div><button class="dialog-close" data-close="livery-dialog" aria-label="关闭涂装选择">×</button></div><div id="livery-options" aria-label="这款车可选的涂装"></div></dialog>
-<dialog id="help-dialog"><div class="dialog-header"><h1>一起动手吧</h1><button class="dialog-close" data-close="help-dialog" aria-label="关闭帮助">×</button></div><div class="help-grid"><div><b aria-hidden="true">◇</b><strong>拖一拖</strong><span>拖住零件，靠近发光位置</span></div><div><b>↻</b><strong>转一转</strong><span>空白处单指拖动，绕车看一圈</span></div><div><b>↔</b><strong>双指移动</strong><span>双指一起滑动看四周，捏合缩放</span></div><div><b>✓</b><strong>轻点也可以</strong><span>点零件，再点小手指向的位置；点已装好的零件直接拆下</span></div></div><p class="desktop-note">电脑：鼠标拖动旋转 · 右键拖动平移 · 滚轮缩放 · 方向键移动视角</p><p class="drive-help">拼好后点「出发」进入阳光小镇。按住油门前进，左右键转向，刹车减速，倒车键向后开。按照上方提示找到任务地点，按住任务按钮帮帮小镇居民！回停车场后可以换车，也可以再拼一辆。声音会在第一次触摸后开始，可随时静音。</p></dialog>
-<script type="module" src="./app.js?v=4"></script>
+<dialog id="help-dialog"><div class="dialog-header"><h1>一起动手吧</h1><button class="dialog-close" data-close="help-dialog" aria-label="关闭帮助">×</button></div><div class="help-grid"><div><b aria-hidden="true">◇</b><strong>拖一拖</strong><span>拖住零件，靠近发光位置</span></div><div><b>↻</b><strong>转一转</strong><span>空白处单指拖动，绕车看一圈</span></div><div><b>↔</b><strong>双指移动</strong><span>双指一起滑动看四周，捏合缩放</span></div><div><b>✓</b><strong>轻点也可以</strong><span>点零件，再点小手指向的位置；点已装好的零件直接拆下</span></div></div><p class="desktop-note">电脑：鼠标拖动旋转 · 右键拖动平移 · 滚轮缩放 · 方向键移动视角</p><p class="drive-help">拼好后点「出发」进入阳光小镇。左手左右拖动方向摇杆，右手按住油门前进；松开摇杆自动回正。刹车减速，倒车键向后开。电脑也可用方向键或 WASD 驾驶，R 倒车，空格刹车。警车和救护车可以用「警笛」按钮开关各自的警笛。按照上方提示找到任务地点，按住任务按钮帮帮小镇居民！回停车场后可以换车，也可以再拼一辆。声音会在第一次触摸后开始，可随时静音。</p></dialog>
+<script type="module" src="./app.js?v=5"></script>
 </body></html>

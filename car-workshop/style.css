@@ -30,3 +30,34 @@ body{background:#c5e9ee}button:focus-visible,input:focus-visible{outline:3px sol
 @media(max-width:700px){.compatibility-note{position:absolute;right:0;top:55px;font-size:9px;padding:3px 6px}.driving .compatibility-note{display:none}}
 .town-map-wrap{position:absolute;right:24px;top:90px;padding:5px;background:#fffdf2e8;border:2px solid white;border-radius:20px;box-shadow:0 4px 18px #174b6920}.town-map-wrap canvas{display:block;width:144px;height:144px;border-radius:14px}.town-map-wrap span{display:block;text-align:center;font-size:9px;color:#234d63;margin:4px 0 0;font-weight:700}@media(max-width:700px){.town-map-wrap{right:12px;top:190px;padding:4px;border-radius:15px}.town-map-wrap canvas{width:96px;height:96px;border-radius:10px}.town-map-wrap span{font-size:8px;max-width:96px}}@media(max-height:550px){.town-map-wrap{right:16px;top:72px}.town-map-wrap canvas{width:90px;height:90px}.town-map-wrap span{display:none}}
 .return-button{min-height:44px}
+
+/* Thumb-friendly driving: independent steering and pedals, crisp instrument styling. */
+.drive-controls{left:max(24px,env(safe-area-inset-left));right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));gap:24px}
+.steering-controls{position:relative;display:block;flex:0 0 auto}
+.steering-stick{position:relative;width:160px;height:160px;border:2px solid #ffffffb8;border-radius:50%;background:#193746c9;box-shadow:0 3px 12px #102b4038,inset 0 0 0 8px #ffffff0c;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;color:#edf6fa;outline-offset:5px}
+.steering-stick:focus-visible{outline:3px solid #ffd76c}
+.stick-track{position:absolute;inset:0 12px;display:flex;align-items:center;justify-content:space-between;font-size:29px;color:#d6e7ee9c}
+.stick-knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:50%;display:grid;place-items:center;font-size:28px;background:#edf4f6;color:#274657;border:3px solid #fff;box-shadow:0 3px 8px #061e3655;transform:translate(var(--stick-x,0px),var(--stick-y,0px));pointer-events:none}
+.stick-caption{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:11px;letter-spacing:2px;color:#d0e1ea}
+.steering-stick.engaged{border-color:#ffd76c;background:#1b4558e8}.engaged .stick-knob{background:#ffdc82;border-color:#fff0ba}
+.pedal-controls{display:grid;grid-template-columns:84px 100px;grid-template-rows:48px 100px;gap:12px;align-items:stretch}
+.pedal-controls .reverse-button{position:static;width:auto;height:auto;grid-column:1;grid-row:1;border-radius:10px;background:#edf3f5;color:#304b5c;border:2px solid #fff;box-shadow:0 3px 0 #17364c70}
+.pedal-controls .brake{grid-column:1;grid-row:2;width:auto;height:auto;background:#f5b2a1;color:#623a32;border-radius:12px}
+.pedal-controls .accelerator{grid-column:2;grid-row:1/3;width:auto;height:auto;border-radius:12px;background:#ffda79;color:#3d482b;box-shadow:0 3px 0 #b38a35}
+.pedal-controls button{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pedal-controls button.pressed{background:#8cdbb7;transform:translateY(2px);box-shadow:0 1px 0 #17364c70}
+.siren-button{position:absolute;left:0;top:-60px;min-width:100px;min-height:46px;padding:10px 14px;border-radius:10px;background:#f4f8fa;color:#21485e;border:2px solid #fff;box-shadow:0 2px 8px #15304730;font-size:14px;font-weight:800}.siren-button span{color:#347da8;margin-right:5px}.siren-button[aria-pressed=true]{background:#264e6a;color:#fff;border-color:#87c8eb}.siren-button[aria-pressed=true] span{color:#ff857d}
+.dashboard{border-radius:10px;bottom:calc(28px + env(safe-area-inset-bottom))}.mission-panel{border-radius:12px}.return-button{border-radius:10px}.town-map-wrap{border-radius:12px}.town-map-wrap canvas{border-radius:7px}
+@media(max-width:600px){
+ .drive-controls{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));gap:12px}
+ .steering-stick{width:132px;height:132px}.stick-knob{width:50px;height:50px;margin:-25px}.stick-caption{bottom:8px}
+ .pedal-controls{grid-template-columns:64px 76px;grid-template-rows:46px 86px;gap:10px}.pedal-controls .pedal b{font-size:13px}.pedal-controls .accelerator span{font-size:36px}
+ .dashboard{top:auto;bottom:calc(181px + env(safe-area-inset-bottom));padding:8px 11px}
+ .siren-button{top:-58px;min-width:92px;font-size:13px}
+}
+@media(max-width:350px){.steering-stick{width:120px;height:120px}.pedal-controls{grid-template-columns:62px 72px;gap:8px}.drive-controls{gap:10px}.stick-track{inset:0 9px}}
+@media(max-height:550px) and (min-width:551px){
+ .drive-controls{bottom:max(14px,env(safe-area-inset-bottom));left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right))}
+ .steering-stick{width:132px;height:132px}.pedal-controls{grid-template-columns:76px 90px;grid-template-rows:44px 76px;gap:10px}
+ .dashboard{top:auto;bottom:20px}.siren-button{top:-54px;min-height:44px}.stick-caption{bottom:8px}
+}

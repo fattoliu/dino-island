@@ -65,3 +65,49 @@ test('completion creates filtered crowd voices and handclaps, and disposal is fi
   a.dispose(); a.dispose(); a.unlock(); a.cheer(); a.startEngine();
   assert.equal(a._voices.size,0); assert.equal(a._timer,null); assert.equal(a.context.state,'closed');
 });
+
+test('vehicle classes have different idle, rev and timbre; switching releases old voices', () => {
+  const a=make(); a.unlock(); a.startEngine();
+  const signatures=new Set();
+  for (const id of ['taxi','compact','bmw','ferrari','gclass','truck','van','tractor']) {
+    const old=a._engine; a.setVehicle(id); a.updateEngine(.6,1);
+    const e=a._engine;
+    signatures.add(JSON.stringify(e.oscillators.map(({o})=>[o.type,o.frequency.value])));
+    if (old!==e) assert.ok(old.oscillators.every(({o})=>o.stopped&&o.disconnected));
+    assert.equal([...a._voices].filter(v=>v.tag==='engine').length,3);
+  }
+  assert.equal(signatures.size,8); a.dispose();
+});
+const sirens = a => [...a._voices].filter(v=>v.tag==='siren');
+test('emergency sirens differ by waveform, cadence and pitch contour', () => {
+  const a=make(); a.unlock(); a.setMode('drive'); a.startEngine();
+  a.setVehicle('police'); const police=sirens(a);
+  assert.equal(police.length,1); assert.equal(police[0].source.type,'triangle');
+  assert.deepEqual(police[0].source.frequency.events.map(e=>e.slice(0,2)),[['set',620],['linear',1480],['linear',620]]);
+  a.setVehicle('ambulance'); assert.ok(police[0].source.stopped);
+  const ambulance=sirens(a); assert.equal(ambulance.length,2);
+  assert.deepEqual(ambulance.map(v=>v.source.frequency.value),[960,640]);
+  assert.ok(ambulance.every(v=>v.source.type==='square'));
+  a.setVehicle('fire'); const fire=sirens(a); assert.equal(fire.length,1);
+  assert.equal(fire[0].source.type,'sawtooth'); assert.ok(fire[0].source.stopTime>3);
+  a.setVehicle('taxi'); assert.equal(a.hasSiren,false); a.setSiren(true);
+  assert.equal(a.sirenEnabled,false); assert.equal(sirens(a).length,0); a.dispose();
+});
+test('siren is independent of engine, never runs in garage, and survives mute/visibility safely', async () => {
+  const a=make(); a.setVehicle('police'); a.unlock(); a.startEngine();
+  assert.equal(a.sirenEnabled,true); assert.equal(sirens(a).length,0);
+  a.setMode('drive'); a._sync(); assert.equal(sirens(a).length,1);
+  const engine=a._engine; a.setSiren(false); assert.equal(a._engine,engine); assert.equal(sirens(a).length,0);
+  a.setHidden(true); a.setHidden(false); await Promise.resolve(); assert.equal(sirens(a).length,0);
+  a.setSiren(true); assert.equal(sirens(a).length,1);
+  a.setSiren(true); a.unlock(); assert.equal(sirens(a).length,1);
+  a.setEnabled(false); assert.equal(a._voices.size,0);
+  a.setHidden(true); a.setHidden(false); assert.equal(a._voices.size,0);
+  a.setEnabled(true); await Promise.resolve(); assert.equal(sirens(a).length,1);
+  a.setHidden(true); assert.equal(a._voices.size,0);
+  a.setHidden(false); await Promise.resolve(); assert.equal(sirens(a).length,1);
+  a.stopEngine(); assert.equal(sirens(a).length,0);
+  a.startEngine(); assert.equal(sirens(a).length,1);
+  a.setMode('garage'); assert.equal(sirens(a).length,0);
+  a.dispose(); a.setSiren(true); a.startEngine(); a.unlock(); assert.equal(a._voices.size,0);
+});

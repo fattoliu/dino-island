@@ -11,3 +11,14 @@ test('catalog, liveries and saved car collection expose distinct actions',()=>{f
 test('free driving, reverse and mission actions cancel on pointer release',()=>{for(const id of ['return-garage','steer-left','steer-right','accelerate','reverse','brake','speed','lap-count','mission-title','mission-instruction','mission-progress','mission-action','mission-replay'])assert.ok(html.includes(`id="${id}"`),id);assert.match(app,/pointercancel/);assert.match(app,/lostpointercapture/);assert.match(app,/window\.addEventListener\('keyup'/);assert.match(app,/if\(driveStart\)\{updateDriveCamera\(true\);return;/);assert.match(app,/\['reverse','reverse'\]/);assert.match(app,/\['mission-action','action'\]/);assert.match(app,/function returnToGarage\(\)\{openParking\(\);\}/);});
 test('first gestures unlock music, while context loss disposes sound',()=>{assert.match(app,/document\.addEventListener\('pointerdown',\(\)=>sound\.unlock\(\),\{capture:true\}\)/);assert.match(app,/sound\.dispose\(\);disposed=true;ready=false/);assert.match(app,/sound\.setHidden\(document\.hidden\)/);assert.match(app,/function celebrate\(\)\{sound\.cheer\(\)/);assert.match(html,/id="sound"[^>]+aria-pressed="true"/);assert.match(app,/sound\.setEnabled\(!sound\.enabled\)/);});
 test('tray can shrink and does not mask its last item',()=>{assert.match(css,/\.parts-strip\{[^}]*min-width:0[^}]*mask-image:none/);assert.match(css,/\.part-button\{[^}]*flex(?:-shrink)?:[^;}]+/);assert.match(css,/button:focus-visible/);});
+
+test('vehicle siren and analog steering are connected to live gameplay',()=>{
+ assert.match(app,/sound\.setVehicle\(id\)/);assert.match(app,/sound\.setSiren\(!sound\.sirenEnabled\)/);
+ assert.match(app,/b\.hidden=!sound\.hasSiren/);assert.match(app,/bindSteeringStick\(\$\('steering-stick'\)/);
+ assert.match(app,/driveInput\.steer=left\|\|right\?Number\(right\)-Number\(left\):analogSteer/);
+ assert.match(app,/steeringStick\?\.reset\(\)/);assert.match(app,/if\(driveState\)lighting\.follow\(driveState\.x,driveState\.z,true\)/);
+});
+test('thumbnails use the display tone transform and their own GPU environment',()=>{
+ assert.match(app,/configureRenderer\(thumbnailRenderer\)/);assert.match(app,/thumbnailEnvironment=createEnvironment\(thumbnailRenderer\)/);
+ assert.doesNotMatch(app,/readRenderTargetPixels/);assert.match(app,/thumbScene\.environment=thumbnailEnvironment\.texture/);
+});
