@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {PARTS,createGame,selectPart,installPart,removePart,disassembleAll,isNearTarget} from '../game-state.js';
+test('nine unique parts begin assembled',()=>{const s=createGame();assert.equal(PARTS.length,9);assert.equal(new Set(PARTS.map(p=>p.id)).size,9);assert.equal(s.installed.size,9);});
+test('full disassembly and reassembly cycle',()=>{const s=createGame();disassembleAll(s);assert.equal(s.installed.size,0);assert.equal(s.started,true);for(const p of PARTS){assert.equal(selectPart(s,p.id),true);assert.equal(s.selected,p.id);assert.equal(installPart(s,p.id),true);assert.equal(s.selected,null);}assert.equal(s.installed.size,9);});
+test('invalid and duplicate part operations do not corrupt progress',()=>{const s=createGame();assert.equal(installPart(s,'body'),false);assert.equal(installPart(s,'missing'),false);assert.equal(selectPart(s,'missing'),false);assert.equal(selectPart(s,'body'),false);assert.equal(removePart(s,'missing'),false);assert.equal(s.installed.size,9);});
+test('individual remove is repeatable and clears celebration',()=>{const s=createGame();s.won=true;assert.equal(removePart(s,'engine'),true);assert.equal(removePart(s,'engine'),false);assert.equal(s.won,false);assert.equal(s.installed.size,8);assert.equal(installPart(s,'engine'),true);assert.equal(s.installed.size,9);});
+test('snap radius accepts forgiving nearby drops but rejects far drops',()=>{assert.equal(isNearTarget(50,50,100,100,90),true);assert.equal(isNearTarget(0,0,100,100,90),false);assert.equal(isNearTarget(100,10,100,100,90),true);});
+test('restarting a partial game clears all transient state',()=>{const s=createGame();removePart(s,'body');selectPart(s,'body');s.mode='disassemble';s.won=true;disassembleAll(s);assert.equal(s.selected,null);assert.equal(s.won,false);assert.equal(s.mode,'assemble');assert.equal(s.installed.size,0);});
